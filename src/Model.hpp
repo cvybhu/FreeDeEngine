@@ -1,5 +1,7 @@
 #pragma once
 
+
+#include <vector>
 #include <string>
 
 
@@ -14,5 +16,5 @@ public:
     void unloadFromRAM();
     void unloadFromGPU();
 
-
+private:
 };

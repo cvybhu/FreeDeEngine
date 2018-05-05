@@ -7,6 +7,8 @@
 #include <fstream>
 using namespace std;
 
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 class Shader
 {
@@ -18,15 +20,17 @@ public:
 
     void use(){glUseProgram(program);}
 
-    template <class... Args> void set1Int(const std::string &name, Args... args) const {glUniform1i(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set2Int(const std::string &name, Args... args) const {glUniform2i(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set3Int(const std::string &name, Args... args) const {glUniform3i(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set4Int(const std::string &name, Args... args) const {glUniform4i(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set1Int(const std::string &name, Args... args)  {glUniform1i(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set2Int(const std::string &name, Args... args)  {glUniform2i(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set3Int(const std::string &name, Args... args)  {glUniform3i(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set4Int(const std::string &name, Args... args)  {glUniform4i(glGetUniformLocation(program, name.c_str()), args...);}
 
-    template <class... Args> void set1Float(const std::string &name, Args... args) const {glUniform1f(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set2Float(const std::string &name, Args... args) const {glUniform2f(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set3Float(const std::string &name, Args... args) const {glUniform3f(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set4Float(const std::string &name, Args... args) const {glUniform4f(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set1Float(const std::string &name, Args... args)  {glUniform1f(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set2Float(const std::string &name, Args... args)  {glUniform2f(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set3Float(const std::string &name, Args... args)  {glUniform3f(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set4Float(const std::string &name, Args... args)  {glUniform4f(glGetUniformLocation(program, name.c_str()), args...);}
+
+    void setMat4(const std::string& name, const glm::mat4& theMat) { glUniformMatrix4fv(glGetUniformLocation(program, name.c_str()), 1, GL_FALSE, glm::value_ptr(theMat));}
 
 
 

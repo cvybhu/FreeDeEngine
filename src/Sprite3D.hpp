@@ -1,14 +1,22 @@
 #pragma once
 
-#include "Model.hpp"
-#include <iostream>
+#include "Sprite3DBase.hpp"
 
-class Sprite3D
+#include "Mesh.hpp"
+
+#include <glm/mat4x4.hpp>
+
+
+class Sprite3D : public Sprite3DBase
 {
 public:
     Sprite3D();
 
-    Model* model;
-    float pos[3];
-    float rotation[3];
+    //glm::vec3 pos; x y z       -- this comes from base class
+    //glm::vec3 rot; pitch roll yaw
+
+    Mesh* myMesh;
+
+    //openGL Stuff
+    glm::mat4 getModelMatrix();
 };

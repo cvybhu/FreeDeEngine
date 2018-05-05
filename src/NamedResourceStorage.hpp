@@ -38,7 +38,7 @@ private:
 template <class ResourceType, int maxObjectNum>
 NamedResourceStorage<ResourceType, maxObjectNum>::NamedResourceStorage(std::vector<std::string>& filePathsToNamedElements) : filePaths{filePathsToNamedElements}
 {
-    for(int i = 0; i < filePaths.size(); i++)
+    for(int i = 0; i < (int)filePaths.size(); i++)
         filePathToIndex[filePaths[i]] = i;
 
     filePaths.resize(maxObjectNum+2);

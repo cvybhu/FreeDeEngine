@@ -3,7 +3,7 @@ TARGET_EXEC ?= main
 BUILD_DIR ?= .
 SRC_DIRS ?= ./src
 
-CXXFLAGS := -std=c++17
+CXXFLAGS := -std=c++17 -Wall -Wshadow
 LDFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 INCLUDE_DIRS := -I./include  
 
@@ -39,7 +39,7 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 .PHONY: clean
 
 clean:
-	$(RM) -r $(BUILD_DIR)
+	find $(BUILD_DIR)/$(SRC_DIRS) -name "*.o" -type f -delete && find $(BUILD_DIR)/$(SRC_DIRS) -name "*.d" -type f -delete
 
 -include $(DEPS)
 

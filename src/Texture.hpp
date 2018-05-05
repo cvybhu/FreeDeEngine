@@ -18,14 +18,18 @@ public:
     void unloadFromRAM();
     void unloadFromGPU();
 
-    GLuint getGLindx();
+    const GLuint& getGLindx() const;
 
-    const int& width;
-    const int& height;
+    const int& getWidth() const;
+    const int& getHeight() const;
+    const int& getNrChannels() const;
+
+    unsigned char* getPixel(const int& x, const int& y);              //x goes L->R y goes U->D thats kinda prototype
+    const unsigned char* getPixel(const int& x, const int& y) const;  //const-safe version
 
 private:
     unsigned char* data;
-    int textureWidth, textureHeight, nrChannels;
+    int width, height, nrChannels;
     GLuint glIndx;
 };
 

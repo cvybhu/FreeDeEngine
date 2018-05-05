@@ -1,7 +1,7 @@
 #include "Texture.hpp"
 
 
-Texture::Texture() : width(textureWidth), height(textureHeight)
+Texture::Texture() : width(0), height(0), nrChannels(0)
 {
 
 
@@ -13,7 +13,7 @@ Texture::Texture() : width(textureWidth), height(textureHeight)
 
 void Texture::loadToRAM(const std::string& filePath)
 {
-    data = stbi_load(filePath.c_str(), &textureWidth, &textureHeight, &nrChannels, 0);
+    data = stbi_load(filePath.c_str(), &width, &height, &nrChannels, 0);
 
     if (!data)
     {
@@ -51,9 +51,13 @@ void Texture::unloadFromGPU()
 
 
 
-GLuint Texture::getGLindx()
-{
-    return glIndx;
+const GLuint& Texture::getGLindx() const {return glIndx;}
 
-}
+const int& Texture::getWidth() const {return width;}
+const int& Texture::getHeight() const {return height;}
+const int& Texture::getNrChannels() const {return nrChannels;}
+
+
+unsigned char* Texture::getPixel(const int& x, const int& y){return data + nrChannels*sizeof(unsigned char)*y*width + nrChannels*sizeof(unsigned char*)*x;}
+const unsigned char* Texture::getPixel(const int& x, const int& y) const {return data + nrChannels*sizeof(unsigned char)*y*width + nrChannels*sizeof(unsigned char*)*x;}
 
