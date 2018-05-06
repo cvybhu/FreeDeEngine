@@ -7,11 +7,8 @@
 #include <string>
 #include <vector>
 
-class ResourceManager;
-namespace Globals {extern ResourceManager resources;}
 
 #include "Texture.hpp"
-
 
 class Mesh
 {
@@ -28,6 +25,8 @@ public:
     Texture* myTexture;
 
     const GLuint& getVAO() const;
+
+    int getVertsNum() const;
 
 //ivate:
     struct Vertex

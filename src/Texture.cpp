@@ -1,7 +1,7 @@
 #include "Texture.hpp"
 
 
-Texture::Texture() : width(0), height(0), nrChannels(0)
+Texture::Texture() : width(0), height(0), nrChannels(0), isOnRAM(false), isOnGPU(false)
 {
 
 
@@ -19,6 +19,8 @@ void Texture::loadToRAM(const std::string& filePath)
     {
         std::cout << "Failed to load texture " << filePath << std::endl;
     }
+
+    isOnRAM = true;
 }
 
 
@@ -36,17 +38,22 @@ void Texture::loadToGPU()
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
+
+    isOnGPU = true;
 }
 
 
 void Texture::unloadFromRAM()
 {
     stbi_image_free(data);
+
+    isOnRAM = false;
 }
 
 void Texture::unloadFromGPU()
 {
     //TODO
+    isOnGPU = false;
 }
 
 
@@ -56,6 +63,9 @@ const GLuint& Texture::getGLindx() const {return glIndx;}
 const int& Texture::getWidth() const {return width;}
 const int& Texture::getHeight() const {return height;}
 const int& Texture::getNrChannels() const {return nrChannels;}
+
+bool Texture::isLoadedToRAM()const{return isOnRAM;}
+bool Texture::isLoadedToGPU()const{return isOnGPU;}
 
 
 unsigned char* Texture::getPixel(const int& x, const int& y){return data + nrChannels*sizeof(unsigned char)*y*width + nrChannels*sizeof(unsigned char*)*x;}

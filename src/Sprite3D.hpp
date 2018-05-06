@@ -10,12 +10,12 @@
 class Sprite3D : public Sprite3DBase
 {
 public:
-    Sprite3D();
+    Sprite3D(Mesh& theMesh);
 
     //glm::vec3 pos; x y z       -- this comes from base class
-    //glm::vec3 rot; pitch roll yaw
+    //glm::vec3 rot; yaw pitch roll
 
-    Mesh* myMesh;
+    Mesh* const myMesh;
 
     //openGL Stuff
     glm::mat4 getModelMatrix();

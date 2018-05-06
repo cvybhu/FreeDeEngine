@@ -24,6 +24,9 @@ public:
     const int& getHeight() const;
     const int& getNrChannels() const;
 
+    bool isLoadedToRAM() const;
+    bool isLoadedToGPU() const;
+
     unsigned char* getPixel(const int& x, const int& y);              //x goes L->R y goes U->D thats kinda prototype
     const unsigned char* getPixel(const int& x, const int& y) const;  //const-safe version
 
@@ -31,6 +34,8 @@ private:
     unsigned char* data;
     int width, height, nrChannels;
     GLuint glIndx;
+
+    bool isOnRAM, isOnGPU;
 };
 
 

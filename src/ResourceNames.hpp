@@ -13,10 +13,7 @@
 
 
 #include "TexNames.hpp"
-
-
-
-
+#include "MeshNames.hpp"
 
 
 #undef addEnum

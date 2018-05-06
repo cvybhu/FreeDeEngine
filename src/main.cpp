@@ -6,9 +6,9 @@
 #include "Shader.hpp"
 #include "Texture.hpp"
 #include "Camera.hpp"
+#include "utils.hpp"
 
 #include "debugFuncs.hpp"
-#include "Mesh.hpp"
 
 
 #include <iostream>
@@ -17,123 +17,86 @@ using namespace std;
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
-// settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
-
-
-bool init(GLFWwindow*& window)
-{
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    #ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
-    #endif
-
-
-    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
-    {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return false;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return false;
-    }
-
-    glEnable(GL_DEPTH_TEST);
-
-
-    return true;
-}
-
-
 
 int main()
 {
-    GLFWwindow* window;
-    if(!init(window))
-    {
-        cout << "No init for ya!" << endl;
-        return -1;
-    }
-
-
     Shader shader("src/shaders/tex.vs", "src/shaders/tex.fs");
 
 
-    Mesh cube;
-    cube.loadToRAM("mesh/cube.obj");
-    cube.loadToGPU();
+    Mesh& plane = Globals::resources.meshes[meshNames::plane];
+    plane.loadToRAM("mesh/plane.obj");
+    plane.loadToGPU();
 
-    Texture& container = Globals::resources.textures[texNames::container];
-    container.loadToRAM("tex/container.jpg");
-    container.loadToGPU();
+    Sprite3D& sprite = Globals::render.addSprite3D(meshNames::plane);
 
-    LN(cube.getVAO())
-    LN(cube.verts.size())
+    sprite.myMesh->loadToGPU();
 
-    LN(sizeof(Mesh::Vertex)/8)
-    LN(sizeof(float))
+
 
     Camera cam;
-    cam.pos = glm::vec3(-6, 0, 0);
+    cam.pos = glm::vec3(0, 10, 0);
     cam.rot = glm::vec3(0, 0, 0);
+    cam.speed = 10.0;
 
 
-    glm::mat4 model;
+
+    float yaw = 0, pitch = 0, roll = 0;
+
     glm::mat4 projection;
-    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.3f, 0.7f));
-    projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(45.0f), (float)Globals::window.getWidth() / (float)Globals::window.getHeight(), 0.1f, 100.0f);
 
 
-    while (!glfwWindowShouldClose(window))
+    float lastFrameTime = (float)glfwGetTime();
+    while (!glfwWindowShouldClose(Globals::window))
     {
-        // input
-        // -----
-        processInput(window);
+        float deltaTime = (float)glfwGetTime() - lastFrameTime; lastFrameTime = glfwGetTime();
+        // /\ delta time since last frame
 
-        // render
-        // ------
+
+        // input \/
+        if(Globals::window.isPressed(GLFW_KEY_ESCAPE))
+            glfwSetWindowShouldClose(Globals::window, true);
+
+        cam.handleMovement(deltaTime);
+
+
+
+        float speed = 1.0;
+
+        if(Globals::window.isPressed(GLFW_KEY_1))yaw += speed*deltaTime;
+        if(Globals::window.isPressed(GLFW_KEY_2))yaw -= speed*deltaTime;
+        if(Globals::window.isPressed(GLFW_KEY_3))pitch += speed*deltaTime;
+        if(Globals::window.isPressed(GLFW_KEY_4))pitch -= speed*deltaTime;
+        if(Globals::window.isPressed(GLFW_KEY_5))roll += speed*deltaTime;
+        if(Globals::window.isPressed(GLFW_KEY_6))roll -= speed*deltaTime;
+
+
+        Globals::window.update();
+        //input ^
+
+
+
+        // render \/
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        // draw our first triangle
-
-
-        // render container
         shader.use();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, container.getGLindx());
+        glBindTexture(GL_TEXTURE_2D, plane.myTexture->getGLindx());
 
 
-
-        shader.setMat4("model", model);
+        shader.setMat4("model", utils::getYawPitchRollMat(yaw, pitch, roll));
         shader.setMat4("view", cam.getViewMatrix());
         shader.setMat4("projection", projection);
 
-        glBindVertexArray(cube.getVAO());
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(plane.getVAO());
+        glDrawArrays(GL_TRIANGLES, 0, plane.getVertsNum());
 
         // -------------------------------------------------------------------------------
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(Globals::window);
         glfwPollEvents();
     }
-
-    /*
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    */
 
     glfwTerminate();
     return 0;
@@ -141,15 +104,4 @@ int main()
 
 
 
-void processInput(GLFWwindow *window)
-{
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-}
-
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
 

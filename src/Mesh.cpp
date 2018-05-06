@@ -2,8 +2,12 @@
 
 using namespace std;
 
+#include "Logger.hpp"
 #include <fstream>
 #include <vector>
+
+#include "ResourceManager.hpp"
+namespace Globals {extern ResourceManager resources;}
 
 Mesh::Mesh()
 {
@@ -23,7 +27,7 @@ void Mesh::loadToRAM(const std::string& filePath)
 
     while(file >> input)
     {
-        if(input != "v" && input != "vt" && input != "vn" && input != "f")
+        if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "diffTex")
             continue;
 
         if(input == "v")
@@ -68,9 +72,22 @@ void Mesh::loadToRAM(const std::string& filePath)
                 continue;
             }
         }
+
+        if(input == "diffTex")
+        {
+            std::string texPath;
+            file >> texPath;
+
+            myTexture = &Globals::resources.textures[texPath];
+
+            if(!myTexture->isLoadedToRAM())
+                myTexture->loadToRAM(texPath);
+        }
     }
 
     file.close();
+
+    Log << "[MESHLOAD]Load of " << filePath << " succesful! (" << verts.size() << " vertices)\n";
 }
 
 void Mesh::unloadFromRAM()
@@ -108,6 +125,9 @@ void Mesh::loadToGPU()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
 
     glBindVertexArray(0);
+
+    if(!myTexture->isLoadedToGPU())
+        myTexture->loadToGPU();
 }
 
 void Mesh::unloadFromGPU()
@@ -120,3 +140,6 @@ void Mesh::unloadFromGPU()
 
 
 const GLuint& Mesh::getVAO() const {return VAO;}
+
+
+int Mesh::getVertsNum() const {return verts.size();}

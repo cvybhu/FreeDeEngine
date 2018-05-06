@@ -1,8 +1,6 @@
 #include "ResourceManager.hpp"
 
 
-
-
 void ResourceManager::loadTextureToRAM(int index)
 {
     textures[index].loadToRAM(textures.getFilePath(index));

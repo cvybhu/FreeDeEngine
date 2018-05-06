@@ -2,7 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-Sprite3D::Sprite3D()
+Sprite3D::Sprite3D(Mesh& theMesh) : myMesh(&theMesh)
 {
 
 
