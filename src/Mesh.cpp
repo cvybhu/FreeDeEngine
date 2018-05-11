@@ -1,13 +1,14 @@
-#include "Mesh.hpp"
+#include <Mesh.hpp>
+
+#include <Logger.hpp>
+#include <fstream>
+#include <string>
+
+#include <Storage.hpp>
 
 using namespace std;
 
-#include "Logger.hpp"
-#include <fstream>
-#include <vector>
 
-#include "ResourceManager.hpp"
-namespace Globals {extern ResourceManager resources;}
 
 Mesh::Mesh()
 {
@@ -15,7 +16,7 @@ Mesh::Mesh()
 }
 
 
-void Mesh::loadToRAM(const std::string& filePath)
+void Mesh::loadToRAM(const char* filePath)
 {
     ifstream file(filePath);
 
@@ -78,10 +79,10 @@ void Mesh::loadToRAM(const std::string& filePath)
             std::string texPath;
             file >> texPath;
 
-            myTexture = &Globals::resources.textures[texPath];
+            myTexture = &Storage::textures[texPath];
 
             if(!myTexture->isLoadedToRAM())
-                myTexture->loadToRAM(texPath);
+                myTexture->loadToRAM(texPath.c_str());
         }
     }
 

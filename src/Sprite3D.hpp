@@ -1,22 +1,22 @@
 #pragma once
 
-#include "Sprite3DBase.hpp"
-
-#include "Mesh.hpp"
-
 #include <glm/mat4x4.hpp>
 
+template <int maxSprite3DNum> class Renderer;
 
-class Sprite3D : public Sprite3DBase
+
+
+class Sprite3D
 {
 public:
-    Sprite3D(Mesh& theMesh);
+    Sprite3D(int MeshIndex) : meshIndex(MeshIndex), model(1){}
 
-    //glm::vec3 pos; x y z       -- this comes from base class
-    //glm::vec3 rot; yaw pitch roll
+    const int meshIndex;
 
-    Mesh* const myMesh;
+    glm::mat4 model;
 
-    //openGL Stuff
-    glm::mat4 getModelMatrix();
+
+
+//for Renderer
+    int myVecIndex;
 };

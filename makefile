@@ -3,9 +3,9 @@ TARGET_EXEC ?= main
 BUILD_DIR ?= .
 SRC_DIRS ?= ./src
 
-CXXFLAGS := -std=c++17 -Wall -Wshadow
+CXXFLAGS := -std=c++17 -Wall -Wshadow -DGLFW_INCLUDE_NONE -O3
 LDFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
-INCLUDE_DIRS := -I./include  
+INCLUDE_DIRS := -I./include  -I./scr
 
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)

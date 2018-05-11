@@ -1,12 +1,37 @@
-#include "Shader.hpp"
+#include <Shader.hpp>
+
+#include <string>
+#include <fstream>
+#include <Logger.hpp>
+using namespace std;
+
+string readFile(std::string&& path)
+{
+    ifstream file(path);
+
+    if(!file.is_open())
+    {
+        Log << "[SHADER ERROR] - failed to open " << path << "!\n";
+        return "";
+    }
+
+    string result;
+
+    string line;
+    while(getline(file, line))
+            result += (line + '\n');
+
+    file.close();
+
+    return result;
+}
 
 
 
-
-Shader::Shader(string vertexShaderPath, string fragmentShaderPath)
+void Shader::load(std::string path)
 {
     //vertex shader
-    string vertSource = readFile(vertexShaderPath);
+    string vertSource = readFile((path + ".vs"));
     const char* vertSourceCstr = vertSource.c_str();
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -20,14 +45,14 @@ Shader::Shader(string vertexShaderPath, string fragmentShaderPath)
     if(!success)
     {
         glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        cout << "[ERROR] - failed to compile shader " << vertexShaderPath << "!\n";
-        cout << "log:\n" << infoLog << '\n';
+        Log << "[SHADER ERROR] - failed to compile shader " << (path + ".vs") << "!\n";
+        Log << "log:\n" << infoLog << '\n';
         return;
     }
 
 
     //fragment shader
-    string fragSource = readFile(fragmentShaderPath);
+    string fragSource = readFile((path + ".fs"));
     const char* fragSourceCstr = fragSource.c_str();
 
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -39,8 +64,8 @@ Shader::Shader(string vertexShaderPath, string fragmentShaderPath)
     if(!success)
     {
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        cout << "[ERROR] - failed to compile shader " << fragmentShaderPath << "!\n";
-        cout << "log:\n" << infoLog << '\n';
+        Log << "[SHADER ERROR] - failed to compile shader " << (path + ".fs") << "!\n";
+        Log << "log:\n" << infoLog << '\n';
         return;
     }
 
@@ -55,11 +80,13 @@ Shader::Shader(string vertexShaderPath, string fragmentShaderPath)
     if(!success)
     {
         glGetProgramInfoLog(program, 512, NULL, infoLog);
-        cout << "[ERROR] - failed to link shader program for shader: " << vertexShaderPath << "!\n";
-        cout << "log:\n" << infoLog << '\n';
+        Log << "[SHADER ERROR] - failed to link shader program for shader: " << path << "!\n";
+        Log << "log:\n" << infoLog << '\n';
     }
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+
+    Log << "[SHADERLOAD] succesfully loaded " << path << "!\n";
 }
 

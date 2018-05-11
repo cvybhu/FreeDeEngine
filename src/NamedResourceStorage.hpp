@@ -3,8 +3,6 @@
 #include <vector>
 #include <map>
 
-#include <iostream>
-
 template <class ResourceType, int maxObjectNum>
 class NamedResourceStorage
 {
@@ -14,7 +12,7 @@ public:
 
     int getIndex(const std::string& filePath);
 
-    std::string& getFilePath(const int& index);
+    const char* getFilePath(const int& index);
 
 
     NamedResourceStorage(std::vector<std::string>& filePathsToNamedElements);
@@ -71,7 +69,7 @@ int NamedResourceStorage<ResourceType, maxObjectNum>::getIndex(const std::string
 }
 
 template <class ResourceType, int maxObjectNum>
-std::string& NamedResourceStorage<ResourceType, maxObjectNum>::getFilePath(const int& index)
+const char* NamedResourceStorage<ResourceType, maxObjectNum>::getFilePath(const int& index)
 {
-    return filePaths[index];
+    return filePaths[index].c_str();
 }

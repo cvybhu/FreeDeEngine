@@ -1,14 +1,10 @@
 #pragma once
 
-#include "glIncludes.hpp"
-
-#include <string>
-#include <iostream>
-#include <fstream>
-using namespace std;
-
+#include <glad/glad.h>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include <string>
 
 class Shader
 {
@@ -16,46 +12,23 @@ public:
     GLuint program;
 
     Shader(){}
-    Shader(string vertexShaderPath, string fragmentShaderPath);
+    Shader(const std::string path)  {load(path);}
+
+    void load(const std::string path);
 
     void use(){glUseProgram(program);}
 
-    template <class... Args> void set1Int(const std::string &name, Args... args)  {glUniform1i(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set2Int(const std::string &name, Args... args)  {glUniform2i(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set3Int(const std::string &name, Args... args)  {glUniform3i(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set4Int(const std::string &name, Args... args)  {glUniform4i(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set1Int(const char* name, Args... args)  {glUniform1i(glGetUniformLocation(program, name), args...);}
+    template <class... Args> void set2Int(const char* name, Args... args)  {glUniform2i(glGetUniformLocation(program, name), args...);}
+    template <class... Args> void set3Int(const char* name, Args... args)  {glUniform3i(glGetUniformLocation(program, name), args...);}
+    template <class... Args> void set4Int(const char* name, Args... args)  {glUniform4i(glGetUniformLocation(program, name), args...);}
 
-    template <class... Args> void set1Float(const std::string &name, Args... args)  {glUniform1f(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set2Float(const std::string &name, Args... args)  {glUniform2f(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set3Float(const std::string &name, Args... args)  {glUniform3f(glGetUniformLocation(program, name.c_str()), args...);}
-    template <class... Args> void set4Float(const std::string &name, Args... args)  {glUniform4f(glGetUniformLocation(program, name.c_str()), args...);}
+    template <class... Args> void set1Float(const char* name, Args... args)  {glUniform1f(glGetUniformLocation(program, name), args...);}
+    template <class... Args> void set2Float(const char* name, Args... args)  {glUniform2f(glGetUniformLocation(program, name), args...);}
+    template <class... Args> void set3Float(const char* name, Args... args)  {glUniform3f(glGetUniformLocation(program, name), args...);}
+    template <class... Args> void set4Float(const char* name, Args... args)  {glUniform4f(glGetUniformLocation(program, name), args...);}
 
-    void setMat4(const std::string& name, const glm::mat4& theMat) { glUniformMatrix4fv(glGetUniformLocation(program, name.c_str()), 1, GL_FALSE, glm::value_ptr(theMat));}
-
-
-
-
-private:
-    string readFile(const string& path) const
-    {
-        ifstream file(path);
-
-        if(!file.is_open())
-        {
-            cout << "[ERROR] - failed to open " << path << "!\n";
-            return "";
-        }
-
-        string result;
-
-        string line;
-        while(getline(file, line))
-            result += (line + '\n');
-
-        file.close();
-
-        return result;
-    }
+    void setMat4(const char* name, const glm::mat4& theMat) { glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, glm::value_ptr(theMat));}
 };
 
 

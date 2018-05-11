@@ -1,107 +1,73 @@
-#include "glIncludes.hpp"
-#include <cmath>
-#include <glm/mat4x4.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "Globals.hpp"
-#include "Shader.hpp"
-#include "Texture.hpp"
-#include "Camera.hpp"
-#include "utils.hpp"
-
-#include "debugFuncs.hpp"
-
-
 #include <iostream>
+#include <Window.hpp>
+#include <Shader.hpp>
+#include <Storage.hpp>
+#include <FreeCam.hpp>
+#include <Renderer.hpp>
+#include <TimeTeller.hpp>
+
+#include <glm/gtc/matrix_transform.hpp>
+
 using namespace std;
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window);
 
 
 int main()
 {
-    Shader shader("src/shaders/tex.vs", "src/shaders/tex.fs");
+    Window::init();
 
 
-    Mesh& plane = Globals::resources.meshes[meshNames::plane];
-    plane.loadToRAM("mesh/plane.obj");
-    plane.loadToGPU();
+    Mesh& planeMesh = Storage::meshes[meshNames::plane];
+    planeMesh.loadToRAM("mesh/plane.obj");
+    planeMesh.loadToGPU();
 
-    Sprite3D& sprite = Globals::render.addSprite3D(meshNames::plane);
+    Renderer<10> render;
 
-    sprite.myMesh->loadToGPU();
-
-
-
-    Camera cam;
-    cam.pos = glm::vec3(0, 10, 0);
-    cam.rot = glm::vec3(0, 0, 0);
-    cam.speed = 10.0;
+    Sprite3D& plane = render.addSprite3D(meshNames::plane);
 
 
-
-    float yaw = 0, pitch = 0, roll = 0;
-
-    glm::mat4 projection;
-    projection = glm::perspective(glm::radians(45.0f), (float)Globals::window.getWidth() / (float)Globals::window.getHeight(), 0.1f, 100.0f);
+    FreeCam cam({0, 10, 0});
 
 
-    float lastFrameTime = (float)glfwGetTime();
-    while (!glfwWindowShouldClose(Globals::window))
+    double lastFrameTime = glfwGetTime();
+    double deltaTime = 0;
+
+    TimeTeller frameTimeTeller("frame time", 0.5);
+    TimeTeller renderTimeTeller("render time", 0.5);
+    while (!glfwWindowShouldClose(Window::window))
     {
-        float deltaTime = (float)glfwGetTime() - lastFrameTime; lastFrameTime = glfwGetTime();
-        // /\ delta time since last frame
+        //time
+        deltaTime = glfwGetTime() - lastFrameTime;
+        lastFrameTime = glfwGetTime();
+
+        frameTimeTeller.startMeasuring();
 
 
-        // input \/
-        if(Globals::window.isPressed(GLFW_KEY_ESCAPE))
-            glfwSetWindowShouldClose(Globals::window, true);
+        //input
+        if(Window::isPressed(GLFW_KEY_ESCAPE))
+            glfwSetWindowShouldClose(Window::window, true);
 
         cam.handleMovement(deltaTime);
 
 
-
-        float speed = 1.0;
-
-        if(Globals::window.isPressed(GLFW_KEY_1))yaw += speed*deltaTime;
-        if(Globals::window.isPressed(GLFW_KEY_2))yaw -= speed*deltaTime;
-        if(Globals::window.isPressed(GLFW_KEY_3))pitch += speed*deltaTime;
-        if(Globals::window.isPressed(GLFW_KEY_4))pitch -= speed*deltaTime;
-        if(Globals::window.isPressed(GLFW_KEY_5))roll += speed*deltaTime;
-        if(Globals::window.isPressed(GLFW_KEY_6))roll -= speed*deltaTime;
+        // render
+        renderTimeTeller.startMeasuring();
+        render.draw(cam.getProjectionMatrix(), cam.getViewMatrix());
+        renderTimeTeller.stopMeasuring();
 
 
-        Globals::window.update();
-        //input ^
+        //time
+        frameTimeTeller.stopMeasuring();
+        frameTimeTeller.tell();
+        renderTimeTeller.tell();
 
+        //window events
+        Window::update();
 
-
-        // render \/
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-        shader.use();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, plane.myTexture->getGLindx());
-
-
-        shader.setMat4("model", utils::getYawPitchRollMat(yaw, pitch, roll));
-        shader.setMat4("view", cam.getViewMatrix());
-        shader.setMat4("projection", projection);
-
-        glBindVertexArray(plane.getVAO());
-        glDrawArrays(GL_TRIANGLES, 0, plane.getVertsNum());
-
-        // -------------------------------------------------------------------------------
-        glfwSwapBuffers(Globals::window);
-        glfwPollEvents();
+        glfwSwapBuffers(Window::window);
     }
 
-    glfwTerminate();
+
     return 0;
 }
-
-
-
 

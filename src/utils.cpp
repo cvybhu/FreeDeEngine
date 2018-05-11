@@ -1,6 +1,5 @@
 #include "utils.hpp"
 
-#include <iostream>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -15,7 +14,6 @@ namespace utils
         glm::vec3 front(0, -1, 0);
         glm::vec3 right = glm::cross(front, up);
 
-        //std::cout << "yaw: " << yaw << '\n';
 
         //yaw
         front = glm::rotate(front, yaw, up);
@@ -24,10 +22,7 @@ namespace utils
         //pitch
         front = glm::rotate(front, pitch, right);
 
-
-
-        //roll
-        res = glm::rotate(res, roll, front);
+        res = glm::rotate(res, roll, front); //roll
         res = glm::rotate(res, pitch, right); //pitch
         res = glm::rotate(res, yaw, up);        //yaw
 

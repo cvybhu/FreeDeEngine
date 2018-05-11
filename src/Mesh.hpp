@@ -1,21 +1,19 @@
 #pragma once
 
-#include "glIncludes.hpp"
+#include <glad/glad.h>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-#include <string>
 #include <vector>
 
-
-#include "Texture.hpp"
+class Texture;
 
 class Mesh
 {
 public:
     Mesh();
 
-    void loadToRAM(const std::string& filePath);
+    void loadToRAM(const char* filePath);
     void loadToGPU();
 
     void unloadFromRAM();

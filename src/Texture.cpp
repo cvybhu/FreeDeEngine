@@ -1,4 +1,6 @@
-#include "Texture.hpp"
+#include <Texture.hpp>
+
+#include <Logger.hpp>
 
 
 Texture::Texture() : width(0), height(0), nrChannels(0), isOnRAM(false), isOnGPU(false)
@@ -11,16 +13,18 @@ Texture::Texture() : width(0), height(0), nrChannels(0), isOnRAM(false), isOnGPU
 
 
 
-void Texture::loadToRAM(const std::string& filePath)
+void Texture::loadToRAM(const char* filePath)
 {
-    data = stbi_load(filePath.c_str(), &width, &height, &nrChannels, 0);
+    data = stbi_load(filePath, &width, &height, &nrChannels, 0);
 
     if (!data)
     {
-        std::cout << "Failed to load texture " << filePath << std::endl;
+        Log << "[ERROR TEX] Failed to load texture " << filePath << "\n";
     }
 
     isOnRAM = true;
+
+    Log << "[TEXLOAD] Succesfully loaded " << filePath << "!\n";
 }
 
 

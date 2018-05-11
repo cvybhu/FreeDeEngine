@@ -1,16 +1,17 @@
 #pragma once
 
+#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 
-//#include <GLFW/glfw3.h>
 
-
-class Camera
+class FreeCam
 {
 public:
+    FreeCam(glm::vec3 position = {0, 0, 0}, glm::vec2 rotation = {0, 0}, float speed = 10);
+
     glm::vec3 pos;
-    glm::vec3 rot;  //yaw pitch roll
+    glm::vec2 rot;  //yaw pitch
 
     float fov;
 
@@ -18,8 +19,9 @@ public:
     float speed;
 
 
-    void handleMovement(float deltaTime);
 
+    void handleCameraRot(glm::vec2 mouseDelta);
+    void handleMovement(float deltaTime);
 
     void moveForward(float deltaTime);
     void moveBack(float deltaTime);
@@ -28,8 +30,8 @@ public:
     void moveUp(float deltaTime);
     void moveDown(float deltaTime);
 
+
 //openGL stuff
     glm::mat4 getViewMatrix();
-
-
+    glm::mat4 getProjectionMatrix();
 };

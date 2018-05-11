@@ -1,10 +1,7 @@
 #pragma once
 
-#include "glIncludes.hpp"
+#include <glad/glad.h>
 #include <stb_image.h>
-#include <string>
-#include <iostream>
-
 
 
 class Texture
@@ -12,7 +9,7 @@ class Texture
 public:
     Texture();
 
-    void loadToRAM(const std::string& filePath);
+    void loadToRAM(const char* filePath);
     void loadToGPU();
 
     void unloadFromRAM();
@@ -28,7 +25,7 @@ public:
     bool isLoadedToGPU() const;
 
     unsigned char* getPixel(const int& x, const int& y);              //x goes L->R y goes U->D thats kinda prototype
-    const unsigned char* getPixel(const int& x, const int& y) const;  //const-safe version
+    const unsigned char* getPixel(const int& x, const int& y) const;  //const-safe version xd
 
 private:
     unsigned char* data;

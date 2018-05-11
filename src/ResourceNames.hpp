@@ -1,21 +1,19 @@
 #pragma once
 
-#define createNamedResourceStorageBase(namespaceName)                    \
- namespace namespaceName                                             \
- {                                                                   \
-    std::vector<std::string> filePaths = {"this time indexing from 1 :C"};\
- }
+#include <vector>
+#include <string>
 
-#define addEnum(theNamespace, enumName) namespace theNamespace{ enum{enumName = __COUNTER__};}
-#define addToVector(theVector, value, uniqueVariableName) namespace{char xXx##uniqueVariableName##xXx = (theVector.emplace_back(value), 69);}
-#define addResource(theNamespace, enumName, path) addEnum(theNamespace, enumName)  addToVector(theNamespace::filePaths, path, enumName)
+#define setNames(namespaceName, ...) namespace namespaceName{ extern std::vector<std::string> filePaths; enum{ZERO_DUMMY, __VA_ARGS__  ,NAMECOUNT};}
+#define setPaths(namespaceName, ...) namespace namespaceName {inline void setup() {filePaths = {"zero_dummy", __VA_ARGS__, "ending fag"}; filePaths.pop_back();}}
+
+// here include your file \/
+
+#include <TexNames.hpp>
+#include <MeshNames.hpp>
+#include <ShaderNames.hpp>
+
+// ^
 
 
-
-#include "TexNames.hpp"
-#include "MeshNames.hpp"
-
-
-#undef addEnum
-#undef addToVector
-#undef addResource
+#undef setNames
+#undef setPaths
