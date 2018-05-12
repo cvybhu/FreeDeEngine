@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 template <class T, int SIZE>
 class StaticMemPool
 {
@@ -11,17 +9,13 @@ public:
     void* getMem();
     void freeMem(const void*& ptr);
 
-    int size() const;
-
 private:
     unsigned char mem[sizeof(T)*SIZE];
     unsigned char* nxtFreeSpace;
-    std::vector<void*> freePlaces;
+
+    void* returned[SIZE];
+    void** retEnd;
 };
-
-
-
-
 
 
 
@@ -31,6 +25,7 @@ template <class T, int SIZE>
 StaticMemPool<T, SIZE>::StaticMemPool()
 {
     nxtFreeSpace = mem;
+    retEnd = returned;
 }
 
 
@@ -39,15 +34,14 @@ void* StaticMemPool<T, SIZE>::getMem()
 {
     void* res;
 
-    if(freePlaces.empty())
+    if(retEnd == returned)
     {
         res = nxtFreeSpace;
         nxtFreeSpace += sizeof(T);
     }
     else
     {
-        res = freePlaces.back();
-        freePlaces.pop_back();
+        res = *(--retEnd);
     }
 
     return res;
@@ -57,12 +51,5 @@ void* StaticMemPool<T, SIZE>::getMem()
 template <class T, int SIZE>
 void StaticMemPool<T, SIZE>::freeMem(const void*& ptr)
 {
-    freePlaces.emplace_back(ptr);
-}
-
-
-template <class T, int SIZE>
-int StaticMemPool<T, SIZE>::size() const
-{
-    return SIZE;
+    *(retEnd++) = ptr;
 }

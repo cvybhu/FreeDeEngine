@@ -2,7 +2,7 @@
 
 #include <glm/mat4x4.hpp>
 
-template <int maxSprite3DNum> class Renderer;
+class Renderer;
 
 
 
@@ -17,6 +17,7 @@ public:
 
 
 
-//for Renderer
+private:
+    friend Renderer;
     int myVecIndex;
 };

@@ -28,6 +28,10 @@ public:
     template <class... Args> void set3Float(const char* name, Args... args)  {glUniform3f(glGetUniformLocation(program, name), args...);}
     template <class... Args> void set4Float(const char* name, Args... args)  {glUniform4f(glGetUniformLocation(program, name), args...);}
 
+    void setVec2(const char* name, glm::vec2 vec) {glUniform2f(glGetUniformLocation(program, name), vec.x, vec.y);}
+    void setVec3(const char* name, glm::vec3 vec) {glUniform3f(glGetUniformLocation(program, name), vec.x, vec.y, vec.z);}
+    void setVec4(const char* name, glm::vec4 vec) {glUniform4f(glGetUniformLocation(program, name), vec.x, vec.y, vec.z, vec.w);}
+
     void setMat4(const char* name, const glm::mat4& theMat) { glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, glm::value_ptr(theMat));}
 };
 

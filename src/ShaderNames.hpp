@@ -1,9 +1,11 @@
 //Shader Names:
 
 setNames(shaderNames,
-    tex
+    tex,
+    light
 )
 
 setPaths(shaderNames,
-    "src/shaders/tex"
+    "src/shaders/tex",
+    "src/shaders/light"
 )

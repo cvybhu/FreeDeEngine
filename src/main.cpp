@@ -11,19 +11,39 @@
 using namespace std;
 
 
+#include <DynMemPool.hpp>
+
 
 int main()
 {
     Window::init();
 
 
-    Mesh& planeMesh = Storage::meshes[meshNames::plane];
-    planeMesh.loadToRAM("mesh/plane.obj");
-    planeMesh.loadToGPU();
+    auto meshes2Load = {meshNames::plane, meshNames::light};
 
-    Renderer<10> render;
+    for(int i : meshes2Load)
+    {
+        Mesh& mesh = Storage::meshes[i];
+        mesh.loadToRAM(Storage::meshes.getFilePath(i));
+        mesh.loadToGPU();
+    }
 
-    Sprite3D& plane = render.addSprite3D(meshNames::plane);
+
+
+    Renderer render(2, 10);
+
+    Sprite3D* plane = &render.addSprite3D(meshNames::plane);
+
+    Sprite3D& lightSprite = render.addSprite3D(meshNames::light);
+    lightSprite.model = glm::translate(lightSprite.model, glm::vec3(5, 5, 5));
+
+    PointLight& light = render.addPointLight();
+    light.pos = {5, 5, 5};
+    light.color = glm::vec3(2.0);
+    light.constant = 1.f;
+    light.linear = 0.09f;
+    light.quadratic = 0.032f;
+
 
 
     FreeCam cam({0, 10, 0});
@@ -32,8 +52,8 @@ int main()
     double lastFrameTime = glfwGetTime();
     double deltaTime = 0;
 
-    TimeTeller frameTimeTeller("frame time", 0.5);
-    TimeTeller renderTimeTeller("render time", 0.5);
+    TimeTeller frameTimeTeller("frame time", 1.5);
+    TimeTeller renderTimeTeller("render time", 1.5);
     while (!glfwWindowShouldClose(Window::window))
     {
         //time

@@ -3,7 +3,7 @@ TARGET_EXEC ?= main
 BUILD_DIR ?= .
 SRC_DIRS ?= ./src
 
-CXXFLAGS := -std=c++17 -Wall -Wshadow -DGLFW_INCLUDE_NONE -O3
+CXXFLAGS := -DGLM_ENABLE_EXPERIMENTAL -DGLFW_INCLUDE_NONE -std=c++17 -Wall -Wshadow -O3
 LDFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 INCLUDE_DIRS := -I./include  -I./scr
 

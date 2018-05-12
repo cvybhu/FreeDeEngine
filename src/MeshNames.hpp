@@ -1,9 +1,11 @@
 
 
 setNames(meshNames,
-    plane
+    plane,
+    light
 )
 
 setPaths(meshNames,
-    "mesh/plane.obj"
+    "mesh/plane.obj",
+    "mesh/light.obj"
 )
