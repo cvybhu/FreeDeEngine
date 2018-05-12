@@ -8,13 +8,17 @@
 
 void Renderer::loadShaders()
 {
-    auto indexes = {shaderNames::tex, shaderNames::light};
+    auto indexes = {shaderNames::tex, shaderNames::light, shaderNames::allWhite};
 
     for(int i : indexes)
     {
         Shader& s = Storage::shaders[i];
         s.load(Storage::shaders.getFilePath(i));
     }
+
+    Mesh& lightMesh = Storage::meshes[meshNames::light];
+    lightMesh.loadToRAM("mesh/light.obj");
+    lightMesh.loadToGPU();
 }
 
 bool Renderer::loadedShaders = false;

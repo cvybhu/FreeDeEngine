@@ -7,11 +7,11 @@
 #include <TimeTeller.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 using namespace std;
 
 
-#include <DynMemPool.hpp>
 
 
 int main()
@@ -19,7 +19,7 @@ int main()
     Window::init();
 
 
-    auto meshes2Load = {meshNames::plane, meshNames::light};
+    auto meshes2Load = {meshNames::plane};
 
     for(int i : meshes2Load)
     {
@@ -30,19 +30,23 @@ int main()
 
 
 
-    Renderer render(2, 10);
+    Renderer render(10, 10);
 
-    Sprite3D* plane = &render.addSprite3D(meshNames::plane);
-
-    Sprite3D& lightSprite = render.addSprite3D(meshNames::light);
-    lightSprite.model = glm::translate(lightSprite.model, glm::vec3(5, 5, 5));
+    Sprite3D& plane = render.addSprite3D(meshNames::plane);
 
     PointLight& light = render.addPointLight();
     light.pos = {5, 5, 5};
-    light.color = glm::vec3(2.0);
+    light.color = glm::vec3(1.0);
     light.constant = 1.f;
-    light.linear = 0.09f;
-    light.quadratic = 0.032f;
+    light.linear = 0.05f;
+    light.quadratic = 0.004f;
+
+    PointLight& light2 = render.addPointLight();
+    light2.pos = {3, 1, 4};
+    light2.color = glm::vec3(0.0);
+    light2.constant = 1.f;
+    light2.linear = 0.07f;
+    light2.quadratic = 0.004f;
 
 
 
@@ -68,6 +72,11 @@ int main()
             glfwSetWindowShouldClose(Window::window, true);
 
         cam.handleMovement(deltaTime);
+
+        //game updates
+        light.pos = glm::rotate(light.pos, (float)deltaTime, glm::vec3(0, 0, 1));
+        light2.pos = glm::rotate(light2.pos, (float)deltaTime, glm::vec3(0.5, -0.5, 0.5));
+        //plane.model = glm::rotate(plane.model, (float)deltaTime, glm::vec3(0, 0, 1));
 
 
         // render

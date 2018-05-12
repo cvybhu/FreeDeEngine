@@ -3,6 +3,7 @@
 #include <Storage.hpp>
 #include <Logger.hpp>
 #include <string>
+#include <glm/gtc/matrix_transform.hpp>
 
 void Renderer::draw(glm::mat4 projectionMatrix, glm::mat4 viewMatrix)
 {
@@ -12,8 +13,6 @@ void Renderer::draw(glm::mat4 projectionMatrix, glm::mat4 viewMatrix)
     Shader& light = Storage::shaders[shaderNames::light];
     light.use();
 
-    glActiveTexture(GL_TEXTURE0);
-
 
     light.setMat4("view", viewMatrix);
     light.setMat4("projection", projectionMatrix);
@@ -22,6 +21,9 @@ void Renderer::draw(glm::mat4 projectionMatrix, glm::mat4 viewMatrix)
 
     glm::vec3 viewPos = glm::inverse(viewMatrix) * glm::vec4(0, 0, 0, 1);
     light.setVec3("viewPos", viewPos);
+
+    light.set1Int("diffTexture", 0);
+    light.set1Int("specTexture", 1);
 
 
     loadLights(light);
@@ -35,7 +37,12 @@ void Renderer::draw(glm::mat4 projectionMatrix, glm::mat4 viewMatrix)
 
         Mesh& mesh = Storage::meshes[meshIndex];
 
-        glBindTexture(GL_TEXTURE_2D, mesh.myTexture->getGLindx());
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mesh.diffTexture->getGLindx());
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, mesh.specTexture->getGLindx());
+
+
         glBindVertexArray(mesh.getVAO());
 
         for(Sprite3D* sprite : sprites)
@@ -44,6 +51,8 @@ void Renderer::draw(glm::mat4 projectionMatrix, glm::mat4 viewMatrix)
             glDrawArrays(GL_TRIANGLES, 0, mesh.getVertsNum());
         }
     }
+
+    drawLights(projectionMatrix, viewMatrix);
 }
 
 
@@ -62,4 +71,26 @@ void Renderer::loadLights(Shader& shader)
         shader.set1Float(("pointLights[" + std::to_string(i) + "].linear").c_str(), light.linear);
         shader.set1Float(("pointLights[" + std::to_string(i) + "].quadratic").c_str(), light.quadratic);
     }
+}
+
+
+void Renderer::drawLights(glm::mat4& projectionMatrix, glm::mat4& viewMatrix)
+{
+    Shader& allWhite = Storage::shaders[shaderNames::allWhite];
+
+    allWhite.use();
+
+    allWhite.setMat4("projection", projectionMatrix);
+    allWhite.setMat4("view", viewMatrix);
+
+    Mesh& lightMesh = Storage::meshes[meshNames::light];
+    glBindVertexArray(lightMesh.getVAO());
+
+
+    for(PointLight* light : pointLights)
+    {
+        allWhite.setMat4("model", glm::translate(glm::mat4(1), light->pos));
+        glDrawArrays(GL_TRIANGLES, 0, lightMesh.getVertsNum());
+    }
+
 }

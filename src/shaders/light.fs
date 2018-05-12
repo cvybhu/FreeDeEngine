@@ -18,7 +18,8 @@ in vec3 fragPos;
 in vec2 texCoords;
 in vec3 normal;
 
-uniform sampler2D theTexture;
+uniform sampler2D diffTexture;
+uniform sampler2D specTexture;
 
 
 uniform vec3 ambientLight;
@@ -35,13 +36,13 @@ vec3 calculatePointLight(PointLight light)
 
     // ambient
 
-    vec3 ambient = ambientLight * texture(theTexture, texCoords).rgb;
+    vec3 ambient = ambientLight * texture(diffTexture, texCoords).rgb;
 
     // diffuse
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(light.pos - fragPos);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.color * diff * texture(theTexture, texCoords).rgb;
+    vec3 diffuse = light.color * diff * texture(diffTexture, texCoords).rgb;
 
     // specular
     vec3 viewDir = normalize(viewPos - fragPos);
@@ -61,7 +62,7 @@ vec3 calculatePointLight(PointLight light)
         spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
     }
 
-    vec3 specular = light.color * spec * specularity;//texture(theTexture, texCoords).rgb;
+    vec3 specular = light.color * spec * specularity * texture(specTexture, texCoords).rgb;
 
     // attenuation
     float distance    = length(light.pos - fragPos);

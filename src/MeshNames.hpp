@@ -6,6 +6,6 @@ setNames(meshNames,
 )
 
 setPaths(meshNames,
-    "mesh/plane.obj",
+    "mesh/spacePlane.obj",
     "mesh/light.obj"
 )

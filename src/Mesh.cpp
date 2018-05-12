@@ -26,9 +26,11 @@ void Mesh::loadToRAM(const char* filePath)
     vector<glm::vec3> vecNormals;
     vector<glm::vec2> texCoords;
 
+    specTexture = nullptr;
+
     while(file >> input)
     {
-        if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "diffTex")
+        if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "diffTex" && input != "specTex")
             continue;
 
         if(input == "v")
@@ -70,8 +72,9 @@ void Mesh::loadToRAM(const char* filePath)
                 v.normal = vecNormals[index-1];
 
                 verts.emplace_back(v);
-                continue;
             }
+
+            continue;
         }
 
         if(input == "diffTex")
@@ -79,12 +82,30 @@ void Mesh::loadToRAM(const char* filePath)
             std::string texPath;
             file >> texPath;
 
-            myTexture = &Storage::textures[texPath];
+            diffTexture = &Storage::textures[texPath];
 
-            if(!myTexture->isLoadedToRAM())
-                myTexture->loadToRAM(texPath.c_str());
+            if(!diffTexture->isLoadedToRAM())
+                diffTexture->loadToRAM(texPath.c_str());
+
+            continue;
+        }
+
+        if(input == "specTex")
+        {
+            std::string texPath;
+            file >> texPath;
+
+            specTexture = &Storage::textures[texPath];
+
+            if(!specTexture->isLoadedToRAM())
+                specTexture->loadToRAM(texPath.c_str());
+
+            continue;
         }
     }
+
+    if(specTexture == nullptr)
+        specTexture = diffTexture;
 
     file.close();
 
@@ -127,8 +148,11 @@ void Mesh::loadToGPU()
 
     glBindVertexArray(0);
 
-    if(!myTexture->isLoadedToGPU())
-        myTexture->loadToGPU();
+    if(!diffTexture->isLoadedToGPU())
+        diffTexture->loadToGPU();
+
+    if(!specTexture->isLoadedToGPU())
+        specTexture->loadToGPU();
 }
 
 void Mesh::unloadFromGPU()

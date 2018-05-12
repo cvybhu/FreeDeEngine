@@ -20,7 +20,8 @@ public:
     void unloadFromGPU();
 
 
-    Texture* myTexture;
+    Texture* diffTexture;
+    Texture* specTexture;
 
     const GLuint& getVAO() const;
 

@@ -444,4 +444,7 @@ f 78/78/5 80/180/5 76/151/5
 f 80/152/13 81/181/13 77/153/13
 f 62/155/3 79/182/3 78/156/3
 
-diffTex tex/container.jpg
+diffTex tex/box.jpg
+specTex tex/box_spec.jpg
+
+

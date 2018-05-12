@@ -39,6 +39,8 @@ private:
 
     void loadLights(Shader& shader);
 
+    void drawLights(glm::mat4& projectionMatrix, glm::mat4& viewMatrix);
+
 
 private: //static
     static bool loadedShaders;
