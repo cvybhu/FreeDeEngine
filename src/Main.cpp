@@ -1,0 +1,97 @@
+#include <iostream>
+#include <Utils.hpp>
+#include <Render.hpp>
+#include <Game.hpp>
+
+using namespace std;
+
+namespace Storage
+{
+    Texture& getTex(const std::string filePath);
+    Mesh& getMesh(const std::string filePath);
+    Shader& getShader(const std::string filePath);
+}
+
+
+int main()
+{
+    double loadStartTime = glfwGetTime();
+
+    Window::init();
+
+    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj"};
+
+    for(int i = 0 ;i < sizeof(meshes2Load)/sizeof(const char*); i++)
+    {
+        Mesh& mesh = Storage::getMesh(meshes2Load[i]);
+        mesh.loadToRAM(meshes2Load[i]);
+        mesh.loadToGPU();
+    }
+
+
+
+    const char* shaders2Load[] = {"src/shaders/light", "src/shaders/allWhite"};
+
+    for(int i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
+    {
+        Shader& shader = Storage::getShader(shaders2Load[i]);
+        shader.load(shaders2Load[i]);
+
+    }
+
+
+    Game::init();
+
+    double LoadingAndInitTime = glfwGetTime() - loadStartTime;
+    std::cout<<"LOAD AND INIT TIME: "<<LoadingAndInitTime*1000<<"ms\n";
+
+
+    double lastFrameTime = glfwGetTime();
+    double deltaTime = 0;
+
+    TimeTeller frameTimeTeller("frame time", 1.5);
+    TimeTeller renderTimeTeller("render time", 1.5);
+    while (!glfwWindowShouldClose(Window::window))
+    {
+        deltaTime = glfwGetTime() - lastFrameTime;
+        lastFrameTime = glfwGetTime();
+
+        frameTimeTeller.startMeasuring();
+
+
+        Game::cam.handleMovement(deltaTime);
+
+
+        if(Window::isPressed(GLFW_KEY_ESCAPE))
+            glfwSetWindowShouldClose(Window::window, true);
+
+
+
+
+        renderTimeTeller.startMeasuring();
+
+
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        Game::draw();
+
+        renderTimeTeller.stopMeasuring();
+
+
+        frameTimeTeller.stopMeasuring();
+        frameTimeTeller.tell();
+        renderTimeTeller.tell();
+
+        Window::update();
+
+        glfwSwapBuffers(Window::window);
+    }
+
+
+
+
+
+
+    return 0;
+}

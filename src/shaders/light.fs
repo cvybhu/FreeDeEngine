@@ -25,7 +25,7 @@ uniform sampler2D specTexture;
 uniform vec3 ambientLight;
 uniform vec3 viewPos;
 
-uniform PointLight pointLights[10];
+uniform PointLight pointLights[20];
 uniform int pointLightsNum;
 
 
@@ -33,10 +33,6 @@ vec3 calculatePointLight(PointLight light)
 {
     float shininess = 32.0f;
     float specularity = 0.5f;
-
-    // ambient
-
-    vec3 ambient = ambientLight * texture(diffTexture, texCoords).rgb;
 
     // diffuse
     vec3 norm = normalize(normal);
@@ -67,8 +63,9 @@ vec3 calculatePointLight(PointLight light)
     // attenuation
     float distance    = length(light.pos - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+	attenuation = 1.0;
 
-    return (ambient + diffuse + specular)*attenuation;
+    return (diffuse + specular)*attenuation;
 }
 
 
@@ -77,7 +74,7 @@ vec3 calculatePointLight(PointLight light)
 
 void main()
 {
-    vec3 result = vec3(0, 0, 0);
+    vec3 result = ambientLight * texture(diffTexture, texCoords).rgb;
 
     for(int i = 0; i < pointLightsNum; i++)
         result += calculatePointLight(pointLights[i]);

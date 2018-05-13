@@ -8,7 +8,7 @@ LDFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 INCLUDE_DIRS := -I./include  -I./scr
 
 
-SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
+SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c' -or -name '*.s')
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
