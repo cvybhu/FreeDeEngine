@@ -6,8 +6,11 @@
 using namespace std;
 
 
+
+
 int main()
 {
+    //Initialization and asset loading
     double loadStartTime = glfwGetTime();
 
     Window::init();
@@ -34,13 +37,12 @@ int main()
 
     Game::init();
 
-    double LoadingAndInitTime = glfwGetTime() - loadStartTime;
-    std::cout<<"LOAD AND INIT TIME: "<<LoadingAndInitTime*1000<<"ms\n";
+    std::cout<<"LOAD AND INIT TIME: "<< (glfwGetTime() - loadStartTime)*1000<<"ms\n";
 
 
 
 
-
+    //Game loop
     double lastFrameTime = glfwGetTime();
     double deltaTime = 0;
 
@@ -54,15 +56,17 @@ int main()
         frameTimeTeller.startMeasuring();
 
 
-        Game::cam.handleMovement(deltaTime);
-
-
+        //input
         if(Window::isPressed(GLFW_KEY_ESCAPE))
             glfwSetWindowShouldClose(Window::window, true);
 
+        Game::update(deltaTime);
 
 
 
+
+
+        //rendering
         renderTimeTeller.startMeasuring();
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -77,15 +81,15 @@ int main()
         frameTimeTeller.tell();
         renderTimeTeller.tell();
 
-        Window::update();
 
+        //Window updates
+        Window::update();
         glfwSwapBuffers(Window::window);
     }
 
 
 
 
-
-
     return 0;
 }
+

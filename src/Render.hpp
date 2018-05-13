@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+
+
 namespace Window
 {
     extern GLFWwindow* window;
@@ -28,11 +30,14 @@ namespace Window
 
 
 
-struct Texture
+struct Texture //holds pixel data. possible to load from file and on GPU
 {
-    unsigned char* data;
-    int width, height, nrChannels;
+    unsigned char* data;    //data is stored as 1D array (R,G,B,A,X,  R,G,B,A,X, etc...)
+    int width, height;
+    int nrChannels;         //R G B is 3 channels, with alpha its 4 etc.
+
     GLuint glIndx;
+
     bool isOnRAM, isOnGPU;
 
     void loadToRAM(const char* filePath);
@@ -42,19 +47,19 @@ struct Texture
     void unloadFromGPU();
 
     unsigned char* getPixel(const int& x, const int& y);              //x goes L->R y goes U->D thats kinda prototype
-    const unsigned char* getPixel(const int& x, const int& y) const;  //const-safe version xd
+    const unsigned char* getPixel(const int& x, const int& y) const;  //func gives pointer to place where pixel begins
 };
 
-namespace Storage
+namespace Storage  //all Textures are held in global Storage and can be accesed via Storage::getTex("<filePath>")
 {
-    Texture& getTex(const char* name);
+    Texture& getTex(const char* filePath);
 }
 
 
 
 
 
-struct Shader
+struct Shader   //loads and compiles openGL shader. has cool methods to send data to uniforms
 {
     GLuint program;
 
@@ -62,15 +67,16 @@ struct Shader
 
     void use(){glUseProgram(program);}
 
-    template <class... Args> void set1Int(const char* name, Args... args)  {glUniform1i(glGetUniformLocation(program, name), args...);}
-    template <class... Args> void set2Int(const char* name, Args... args)  {glUniform2i(glGetUniformLocation(program, name), args...);}
-    template <class... Args> void set3Int(const char* name, Args... args)  {glUniform3i(glGetUniformLocation(program, name), args...);}
-    template <class... Args> void set4Int(const char* name, Args... args)  {glUniform4i(glGetUniformLocation(program, name), args...);}
+    void set1Int(const char* name, int a)                       {glUniform1i(glGetUniformLocation(program, name), a);}
+    void set2Int(const char* name, int a, int b)                {glUniform2i(glGetUniformLocation(program, name), a, b);}
+    void set3Int(const char* name, int a, int b, int c)         {glUniform3i(glGetUniformLocation(program, name), a, b, c);}
+    void set4Int(const char* name, int a, int b, int c, int d)  {glUniform4i(glGetUniformLocation(program, name), a, b, c, d);}
 
-    template <class... Args> void set1Float(const char* name, Args... args)  {glUniform1f(glGetUniformLocation(program, name), args...);}
-    template <class... Args> void set2Float(const char* name, Args... args)  {glUniform2f(glGetUniformLocation(program, name), args...);}
-    template <class... Args> void set3Float(const char* name, Args... args)  {glUniform3f(glGetUniformLocation(program, name), args...);}
-    template <class... Args> void set4Float(const char* name, Args... args)  {glUniform4f(glGetUniformLocation(program, name), args...);}
+
+    void set1Float(const char* name, float a)                             {glUniform1f(glGetUniformLocation(program, name), a);}
+    void set2Float(const char* name, float a, float b)                    {glUniform2f(glGetUniformLocation(program, name), a, b);}
+    void set3Float(const char* name, float a, float b, float c)           {glUniform3f(glGetUniformLocation(program, name), a, b, c);}
+    void set4Float(const char* name, float a, float b, float c, float d)  {glUniform4f(glGetUniformLocation(program, name), a, b, c, d);}
 
     void setVec2(const char* name, glm::vec2 vec) {glUniform2f(glGetUniformLocation(program, name), vec.x, vec.y);}
     void setVec3(const char* name, glm::vec3 vec) {glUniform3f(glGetUniformLocation(program, name), vec.x, vec.y, vec.z);}
@@ -79,7 +85,7 @@ struct Shader
     void setMat4(const char* name, const glm::mat4& theMat) { glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, glm::value_ptr(theMat));}
 };
 
-namespace Storage
+namespace Storage    //all Shaders are held in global Storage and can be accesed via Storage::getShader("<filePath>")
 {
     Shader& getShader(const char* filePath);
 }
@@ -87,7 +93,7 @@ namespace Storage
 
 
 
-struct Mesh
+struct Mesh //holds vertex data and pointers to used textures from global storage. Loadable from file and on GPU
 {
     void loadToRAM(const char* filePath);
     void loadToGPU();
@@ -111,7 +117,7 @@ struct Mesh
     GLuint VBO, VAO;
 };
 
-namespace Storage
+namespace Storage  //all Meshes are held in global Storage and can be accesed via Storage::getMesh("<filePath>")
 {
     Mesh& getMesh(const char* filePath);
 }
@@ -124,9 +130,9 @@ struct FreeCam
     FreeCam(glm::vec3 position = {0, 0, 0}, glm::vec2 rotation = {0, 0}, float speed = 10);
 
     glm::vec3 pos;
-    glm::vec2 rot;  //yaw pitch
+    glm::vec2 rot;  //yaw pitch (in radians)
 
-    float fov;
+    float fov;  //in degrees
 
     float sensitivity;
     float speed;

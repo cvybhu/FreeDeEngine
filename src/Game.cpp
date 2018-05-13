@@ -1,6 +1,7 @@
 #include <Render.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 
 
@@ -106,5 +107,16 @@ namespace Game
         glDrawArrays(GL_TRIANGLES, 0, planeMesh.vertsNum);
 
         drawLights(pointLights, projectionMatrix, viewMatrix);
+    }
+
+
+    void update(float deltaTime)
+    {
+        cam.handleMovement(deltaTime);
+
+        pointLights[0].pos = glm::rotate(pointLights[0].pos, deltaTime, glm::vec3(0, 0, 1));
+        pointLights[1].pos = glm::rotate(pointLights[1].pos, deltaTime, glm::vec3(1, 1, 0));
+
+
     }
 }
