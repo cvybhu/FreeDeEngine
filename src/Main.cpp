@@ -5,13 +5,6 @@
 
 using namespace std;
 
-namespace Storage
-{
-    Texture& getTex(const std::string filePath);
-    Mesh& getMesh(const std::string filePath);
-    Shader& getShader(const std::string filePath);
-}
-
 
 int main()
 {
@@ -19,9 +12,10 @@ int main()
 
     Window::init();
 
+
     const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj"};
 
-    for(int i = 0 ;i < sizeof(meshes2Load)/sizeof(const char*); i++)
+    for(unsigned i = 0; i < sizeof(meshes2Load)/sizeof(const char*); i++)
     {
         Mesh& mesh = Storage::getMesh(meshes2Load[i]);
         mesh.loadToRAM(meshes2Load[i]);
@@ -29,14 +23,12 @@ int main()
     }
 
 
-
     const char* shaders2Load[] = {"src/shaders/light", "src/shaders/allWhite"};
 
-    for(int i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
+    for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {
         Shader& shader = Storage::getShader(shaders2Load[i]);
         shader.load(shaders2Load[i]);
-
     }
 
 
@@ -44,6 +36,9 @@ int main()
 
     double LoadingAndInitTime = glfwGetTime() - loadStartTime;
     std::cout<<"LOAD AND INIT TIME: "<<LoadingAndInitTime*1000<<"ms\n";
+
+
+
 
 
     double lastFrameTime = glfwGetTime();
@@ -69,7 +64,6 @@ int main()
 
 
         renderTimeTeller.startMeasuring();
-
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

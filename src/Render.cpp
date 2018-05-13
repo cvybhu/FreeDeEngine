@@ -134,18 +134,6 @@ unsigned char* Texture::getPixel(const int& x, const int& y){return data + nrCha
 const unsigned char* Texture::getPixel(const int& x, const int& y) const {return data + nrChannels*sizeof(unsigned char)*y*width + nrChannels*sizeof(unsigned char*)*x;}
 
 
-namespace Storage
-{
-    std::map<std::string, Texture> textures;
-
-    Texture& getTex(const std::string filePath)
-    {
-        return textures[filePath];
-
-
-    }
-}
-
 
 
 
@@ -211,18 +199,6 @@ void Shader::load(const std::string& path)
     std::cout << "[SHADERLOAD] succesfully loaded " << path << "!\n";
 }
 
-
-namespace Storage
-{
-    std::map<std::string, Shader> shaders;
-
-    Shader& getShader(const std::string filePath)
-    {
-        return shaders[filePath];
-
-
-    }
-}
 
 void Mesh::loadToRAM(const char* filePath)
 {
@@ -290,7 +266,7 @@ void Mesh::loadToRAM(const char* filePath)
             std::string texPath;
             file >> texPath;
 
-            diffTexture = &Storage::getTex(texPath);
+            diffTexture = &Storage::getTex(texPath.c_str());
 
             if(!diffTexture->isOnRAM)
                 diffTexture->loadToRAM(texPath.c_str());
@@ -303,7 +279,7 @@ void Mesh::loadToRAM(const char* filePath)
             std::string texPath;
             file >> texPath;
 
-            specTexture = &Storage::getTex(texPath);
+            specTexture = &Storage::getTex(texPath.c_str());
 
             if(!specTexture->isOnRAM)
                 specTexture->loadToRAM(texPath.c_str());
@@ -367,18 +343,6 @@ void Mesh::unloadFromGPU()
     glDeleteBuffers(1, &VBO);
 }
 
-
-namespace Storage
-{
-    std::map<std::string, Mesh> meshes;
-
-    Mesh& getMesh(const std::string filePath)
-    {
-        return meshes[filePath];
-
-
-    }
-}
 
 
 
@@ -474,3 +438,30 @@ glm::mat4 FreeCam::getProjectionMatrix()
 
 
 
+
+
+//Storage stuff - plz keep at the end of the file
+namespace Storage
+{
+    std::map<std::string, Shader> shaders;
+    std::map<std::string, Texture> textures;
+    std::map<std::string, Mesh> meshes;
+
+
+    Shader& getShader(const char* filePath)
+    {
+        return shaders[filePath];
+    }
+
+
+    Texture& getTex(const char* filePath)
+    {
+        return textures[filePath];
+    }
+
+
+    Mesh& getMesh(const char* filePath)
+    {
+        return meshes[filePath];
+    }
+}

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <GLFW/glfw3.h>
 
 #include <glm/vec2.hpp>
@@ -25,6 +26,8 @@ namespace Window
     void update();
 }
 
+
+
 struct Texture
 {
     unsigned char* data;
@@ -41,6 +44,15 @@ struct Texture
     unsigned char* getPixel(const int& x, const int& y);              //x goes L->R y goes U->D thats kinda prototype
     const unsigned char* getPixel(const int& x, const int& y) const;  //const-safe version xd
 };
+
+namespace Storage
+{
+    Texture& getTex(const char* name);
+}
+
+
+
+
 
 struct Shader
 {
@@ -67,6 +79,14 @@ struct Shader
     void setMat4(const char* name, const glm::mat4& theMat) { glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, glm::value_ptr(theMat));}
 };
 
+namespace Storage
+{
+    Shader& getShader(const char* filePath);
+}
+
+
+
+
 struct Mesh
 {
     void loadToRAM(const char* filePath);
@@ -90,6 +110,12 @@ struct Mesh
     int vertsNum;
     GLuint VBO, VAO;
 };
+
+namespace Storage
+{
+    Mesh& getMesh(const char* filePath);
+}
+
 
 
 
@@ -146,16 +172,3 @@ struct DirLight
 };
 
 
-
-
-
-
-namespace Game
-{
-
-
-
-
-
-
-}

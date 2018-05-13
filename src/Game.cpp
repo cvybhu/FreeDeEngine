@@ -2,21 +2,11 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-namespace Storage
-{
-    Texture& getTex(const std::string filePath);
-    Mesh& getMesh(const std::string filePath);
-    Shader& getShader(const std::string filePath);
-}
-
-
-
-
 
 
 void loadPointLightsToShader(const std::vector<PointLight>& pointLights, Shader& shader)
 {
-    //shader.set1Int("pointLightsNum", pointLights.size());
+    shader.set1Int("pointLightsNum", pointLights.size());
 
     for(unsigned int i = 0; i < pointLights.size(); i++)
     {
@@ -62,6 +52,28 @@ namespace Game
 
     FreeCam cam;
 
+
+    void init()
+    {
+        PointLight light;
+        light.pos = {5, 5, 5};
+        light.color = glm::vec3(1.0);
+        light.constant = 1.f;
+        light.linear = 0.05f;
+        light.quadratic = 0.004f;
+
+        PointLight light2;
+        light2.pos = {3, 1, 4};
+        light2.color = glm::vec3(0.0);
+        light2.constant = 1.f;
+        light2.linear = 0.07f;
+        light2.quadratic = 0.004f;
+
+        pointLights.emplace_back(light);
+        pointLights.emplace_back(light2);
+    }
+
+
     void draw()
     {
         glm::mat4 projectionMatrix = cam.getProjectionMatrix();
@@ -71,8 +83,6 @@ namespace Game
 
         lightShader.use();
         loadPointLightsToShader(pointLights, lightShader);
-
-        lightShader.set1Int("pointLightsNum", pointLights.size());
 
         lightShader.setMat4("view", viewMatrix);
         lightShader.setMat4("projection", projectionMatrix);
@@ -96,30 +106,5 @@ namespace Game
         glDrawArrays(GL_TRIANGLES, 0, planeMesh.vertsNum);
 
         drawLights(pointLights, projectionMatrix, viewMatrix);
-    }
-
-
-
-
-
-
-    void init()
-    {
-        PointLight light;
-        light.pos = {5, 5, 5};
-        light.color = glm::vec3(1.0);
-        light.constant = 1.f;
-        light.linear = 0.05f;
-        light.quadratic = 0.004f;
-
-        PointLight light2;
-        light2.pos = {3, 1, 4};
-        light2.color = glm::vec3(0.0);
-        light2.constant = 1.f;
-        light2.linear = 0.07f;
-        light2.quadratic = 0.004f;
-
-        pointLights.emplace_back(light);
-        pointLights.emplace_back(light2);
     }
 }
