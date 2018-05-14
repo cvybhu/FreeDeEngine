@@ -1,4 +1,5 @@
 #include <Render.hpp>
+#include <Physics.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -49,6 +50,7 @@ void drawLights(std::vector<PointLight>& pointLights, glm::mat4& projectionMatri
 namespace Game
 {
     std::vector<PointLight> pointLights;
+    std::vector<PhysicsEntity> physicsEntities;
 
     FreeCam cam;
 
@@ -71,10 +73,24 @@ namespace Game
 
         pointLights.emplace_back(light);
         pointLights.emplace_back(light2);
+
+        PhysicsEntity lightPhys;
+        lightPhys.position = light.pos;
+        lightPhys.linearVelocity = glm::fvec3(0.3, 0.2, 0.01);
+        lightPhys.linearAcceleration = glm::fvec3(0.0, 0.8, 0.0);
+        lightPhys.entityID = 0;
+        physicsEntities.emplace_back(lightPhys);
+
+        PhysicsEntity lightPhys2;
+        lightPhys2.position = light2.pos;
+        lightPhys2.linearVelocity = glm::fvec3(0.3, 0.2, 0.51);
+        lightPhys2.linearAcceleration = glm::fvec3(0.0, 0.8, 0.0);
+        lightPhys2.entityID = 1;
+        physicsEntities.emplace_back(lightPhys2);
     }
 
 
-    void draw()
+    void draw(const GLdouble deltaTime)
     {
         glm::mat4 projectionMatrix = cam.getProjectionMatrix();
         glm::mat4 viewMatrix = cam.getViewMatrix();
@@ -104,6 +120,11 @@ namespace Game
 
         glBindVertexArray(planeMesh.VAO);
         glDrawArrays(GL_TRIANGLES, 0, planeMesh.vertsNum);
+
+        for (GLuint i = 0; i<pointLights.size(); i++)
+        {
+            updatePosition(pointLights[i].pos, physicsEntities[i], deltaTime);
+        }
 
         drawLights(pointLights, projectionMatrix, viewMatrix);
     }

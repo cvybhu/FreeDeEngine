@@ -6,5 +6,5 @@ namespace Game
 
     void init();
 
-    void draw();
+    void draw(const GLdouble deltaTime);
 }
