@@ -14,8 +14,67 @@ namespace Game
     FreeCam cam;
 
 
+    GLuint framebuffer;
+    GLuint texColorBuffer;
+    GLuint depthStencRenderBuff;
+    GLuint screenQuadVBO, screenQuadVAO;
+
+
+
+    void initFramebuffer()
+    {
+        glGenFramebuffers(1, &framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+        glGenTextures(1, &texColorBuffer);
+        glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Window::width, Window::height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        //glBindTexture(GL_TEXTURE_2D, 0); //is this really necessary?
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+
+        glGenRenderbuffers(1, &depthStencRenderBuff);
+        glBindRenderbuffer(GL_RENDERBUFFER, depthStencRenderBuff);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Window::width, Window::height);
+        //glBindRenderbuffer(GL_RENDERBUFFER, 0); //is this really necessary?
+
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencRenderBuff);
+
+        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "Failed to setup framebuffer!!!\n";
+
+        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        float screenQuadVerts[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+        };
+
+        glGenVertexArrays(1, &screenQuadVAO);
+        glGenBuffers(1, &screenQuadVBO);
+        glBindVertexArray(screenQuadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, screenQuadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(screenQuadVerts), &screenQuadVerts, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    }
+
+
     void init()
     {
+        initFramebuffer();
+
         PointLight light;
         light.pos = {5, 5, 5};
         light.color = glm::vec3(1.0);
@@ -92,6 +151,12 @@ namespace Game
         glm::mat4 projectionMatrix = cam.getProjectionMatrix();
         glm::mat4 viewMatrix = cam.getViewMatrix();
 
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+
         drawLights(pointLights, projectionMatrix, viewMatrix);
 
 
@@ -152,5 +217,19 @@ namespace Game
             lightShader.setMat4("model", glm::translate(glm::mat4(1), pos));
             glDrawArrays(GL_TRIANGLES, 0, grass.vertsNum);
         }
+
+
+        Shader& postProcess = Storage::getShader("src/shaders/postProcessTest");
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        postProcess.use();
+        glBindVertexArray(screenQuadVAO);
+        glDisable(GL_DEPTH_TEST);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 }

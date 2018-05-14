@@ -26,7 +26,7 @@ int main()
     }
 
 
-    const char* shaders2Load[] = {"src/shaders/light", "src/shaders/allWhite"};
+    const char* shaders2Load[] = {"src/shaders/light", "src/shaders/allWhite", "src/shaders/postProcessTest"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {
@@ -70,7 +70,6 @@ int main()
         renderTimeTeller.startMeasuring();
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         Game::draw();
 
