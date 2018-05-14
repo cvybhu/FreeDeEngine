@@ -11,6 +11,7 @@
 namespace Game
 {
     std::vector<PointLight> pointLights;
+    std::vector<PhysicsEntity> physicsEntities;
 
     FreeCam cam;
 
@@ -108,13 +109,14 @@ namespace Game
         physicsEntities.emplace_back(lightPhys2);
     }
 
-    void update(float deltaTime)
+    void update(const GLdouble deltaTime)
     {
         cam.handleMovement(deltaTime);
 
-        pointLights[0].pos = glm::rotate(pointLights[0].pos, deltaTime, glm::vec3(0, 0, 1));
-        pointLights[1].pos = glm::rotate(pointLights[1].pos, deltaTime, glm::vec3(1, 1, 0));
-
+        for (GLuint i = 0; i<pointLights.size(); i++)
+        {
+            updatePosition(pointLights[i].pos, physicsEntities[i], deltaTime);
+        }
 
         if(Window::isPressed(GLFW_KEY_P))
             std::cout << "Camera pos: (" << cam.pos.x << ' ' << cam.pos.y << ' ' << cam.pos.z << "\n";
@@ -161,7 +163,7 @@ namespace Game
     }
 
 
-    void draw(const GLdouble deltaTime)
+    void draw()
     {
         glm::mat4 projectionMatrix = cam.getProjectionMatrix();
         glm::mat4 viewMatrix = cam.getViewMatrix();
@@ -202,11 +204,6 @@ namespace Game
         glBindVertexArray(planeMesh.VAO);
         lightShader.setMat4("model", glm::rotate(glm::mat4(1), (float)glm::radians(90.0), glm::vec3(0, 0, 1)));
         glDrawArrays(GL_TRIANGLES, 0, planeMesh.vertsNum);
-
-        for (GLuint i = 0; i<pointLights.size(); i++)
-        {
-            updatePosition(pointLights[i].pos, physicsEntities[i], deltaTime);
-        }
 
         drawLights(pointLights, projectionMatrix, viewMatrix);
 

@@ -4,6 +4,6 @@ namespace Game
 {
     void init();
 
-    void update(float deltaTime);
-    void draw(const GLdouble deltaTime);
+    void update(const GLdouble deltaTime);
+    void draw();
 }
