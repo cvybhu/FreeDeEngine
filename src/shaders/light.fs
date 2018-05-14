@@ -74,6 +74,9 @@ vec3 calculatePointLight(PointLight light)
 
 void main()
 {
+    if(texture(diffTexture, texCoords).a < 0.01)
+        discard;
+
     vec3 result = ambientLight * texture(diffTexture, texCoords).rgb;
 
     for(int i = 0; i < pointLightsNum; i++)

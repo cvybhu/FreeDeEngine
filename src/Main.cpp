@@ -16,7 +16,7 @@ int main()
     Window::init();
 
 
-    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj"};
+    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj"};
 
     for(unsigned i = 0; i < sizeof(meshes2Load)/sizeof(const char*); i++)
     {
@@ -70,7 +70,7 @@ int main()
         renderTimeTeller.startMeasuring();
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         Game::draw();
 

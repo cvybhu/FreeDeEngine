@@ -46,7 +46,7 @@ struct Texture //holds pixel data. possible to load from file and on GPU
     void unloadFromRAM();
     void unloadFromGPU();
 
-    unsigned char* getPixel(const int& x, const int& y);              //x goes L->R y goes U->D thats kinda prototype
+    unsigned char* getPixel(const int& x, const int& y);              //x goes L->R y goes D->U thats kinda prototype
     const unsigned char* getPixel(const int& x, const int& y) const;  //func gives pointer to place where pixel begins
 };
 
