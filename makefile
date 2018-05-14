@@ -3,7 +3,8 @@ TARGET_EXEC ?= main
 BUILD_DIR ?= .
 SRC_DIRS ?= ./src
 
-CXXFLAGS := -DGLM_ENABLE_EXPERIMENTAL -DGLFW_INCLUDE_NONE -std=c++17 -Wall -Wshadow -O3
+DEFS := -DGLM_ENABLE_EXPERIMENTAL -DGLFW_INCLUDE_NONE
+CXXFLAGS := $(DEFS) -std=c++17 -Wall -Wshadow -O3
 LDFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 INCLUDE_DIRS := -I./include  -I./scr
 
@@ -18,7 +19,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
-	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
+	$(CXX) $(OBJS) -o $@ -flto $(CXXFLAGS) $(LDFLAGS)
 
 # assembly
 $(BUILD_DIR)/%.s.o: %.s

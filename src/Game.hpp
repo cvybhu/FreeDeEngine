@@ -2,9 +2,8 @@
 
 namespace Game
 {
-    extern FreeCam cam;
-
     void init();
 
+    void update(float deltaTime);
     void draw(const GLdouble deltaTime);
 }

@@ -6,14 +6,17 @@
 using namespace std;
 
 
+
+
 int main()
 {
+    //Initialization and asset loading
     double loadStartTime = glfwGetTime();
 
     Window::init();
 
 
-    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj"};
+    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj"};
 
     for(unsigned i = 0; i < sizeof(meshes2Load)/sizeof(const char*); i++)
     {
@@ -23,7 +26,7 @@ int main()
     }
 
 
-    const char* shaders2Load[] = {"src/shaders/light", "src/shaders/allWhite"};
+    const char* shaders2Load[] = {"src/shaders/light", "src/shaders/allWhite", "src/shaders/postProcessTest"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {
@@ -34,13 +37,12 @@ int main()
 
     Game::init();
 
-    double LoadingAndInitTime = glfwGetTime() - loadStartTime;
-    std::cout<<"LOAD AND INIT TIME: "<<LoadingAndInitTime*1000<<"ms\n";
+    std::cout<<"LOAD AND INIT TIME: "<< (glfwGetTime() - loadStartTime)*1000<<"ms\n";
 
 
 
 
-
+    //Game loop
     double lastFrameTime = glfwGetTime();
     double deltaTime = 0;
 
@@ -54,19 +56,20 @@ int main()
         frameTimeTeller.startMeasuring();
 
 
-        Game::cam.handleMovement(deltaTime);
-
-
+        //input
         if(Window::isPressed(GLFW_KEY_ESCAPE))
             glfwSetWindowShouldClose(Window::window, true);
 
+        Game::update(deltaTime);
 
 
 
+
+
+        //rendering
         renderTimeTeller.startMeasuring();
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         Game::draw(deltaTime);
 
@@ -77,15 +80,15 @@ int main()
         frameTimeTeller.tell();
         renderTimeTeller.tell();
 
-        Window::update();
 
+        //Window updates
+        Window::update();
         glfwSwapBuffers(Window::window);
     }
 
 
 
 
-
-
     return 0;
 }
+
