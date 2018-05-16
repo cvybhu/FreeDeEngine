@@ -254,7 +254,7 @@ namespace Game
     void drawSkybox(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
     {
         Shader& skyboxShader = Storage::getShader("src/shaders/skybox");
-        
+
         glDepthMask(GL_FALSE);
         skyboxShader.use();
 
@@ -278,7 +278,7 @@ namespace Game
         glBindTexture(GL_TEXTURE_2D, mesh.specTexture->glIndx);
 
         glBindVertexArray(mesh.VAO);
-        
+
     }
 
     void drawMesh(const Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader)
@@ -291,8 +291,6 @@ namespace Game
     {
         glm::mat4 projectionMatrix = cam.getProjectionMatrix();
         glm::mat4 viewMatrix = cam.getViewMatrix();
-        loadPointLightsToShader(pointLights, lightShader);
-        loadDirLightsToShader(dirLights, lightShader);
 
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -300,7 +298,7 @@ namespace Game
         glClearColor(1, 1, 1, 1);
 
         drawSkybox(viewMatrix, projectionMatrix);
-       
+
 
         Shader& lightUseShader = Storage::getShader("src/shaders/light");
 
@@ -308,6 +306,8 @@ namespace Game
 
 
         loadPointLightsToShader(pointLights, lightUseShader);
+        loadDirLightsToShader(dirLights, lightUseShader);
+
 
         lightUseShader.setMat4("view", viewMatrix);
         lightUseShader.setMat4("projection", projectionMatrix);
@@ -321,7 +321,7 @@ namespace Game
 
         Mesh& planeMesh = Storage::getMesh("mesh/spacePlane.obj");
         setupMeshForDraw(planeMesh);
-        drawMesh(planeMesh, glm::mat4(1), lightUseShader);
+        drawMesh(planeMesh, glm::rotate(glm::mat4(1), glm::radians(90.f), glm::vec3(0, 0, 1)), lightUseShader);
 
 
         Mesh& stonePlace = Storage::getMesh("mesh/stonePlace.obj");
@@ -335,9 +335,10 @@ namespace Game
         setupMeshForDraw(grass);
         for(glm::vec3 pos : {glm::vec3(-3, -8, -1), glm::vec3(-2, -7, -1), glm::vec3(-4, -6.3, -1)})
             drawMesh(grass, glm::translate(glm::mat4(1), pos), lightUseShader);
-        
+
 
         drawLights(pointLights, projectionMatrix, viewMatrix);
+
 
         Shader& postProcess = Storage::getShader("src/shaders/postProcessTest");
 
