@@ -32,10 +32,10 @@ uniform sampler2D specTexture;
 uniform vec3 ambientLight;
 uniform vec3 viewPos;
 
-uniform PointLight pointLights[20];
+uniform PointLight pointLights[2];
 uniform int pointLightsNum;
 
-uniform DirLight dirLights[20];
+uniform DirLight dirLights[2];
 uniform int dirLightsNum;
 
 float shininess = 16.0f;
