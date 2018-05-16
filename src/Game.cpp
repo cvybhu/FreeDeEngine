@@ -225,7 +225,7 @@ namespace Game
             std::string&& iAsString = convert2String(i);
 
             shader.setVec3(("dirLights[" + iAsString + "].color").c_str(), light.color);
-            shader.setVec3(("dirLights[" + iAsString + "].dir").c_str(), light.color);
+            shader.setVec3(("dirLights[" + iAsString + "].dir").c_str(), light.dir);
         }
     }
 

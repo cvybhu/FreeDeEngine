@@ -38,7 +38,7 @@ uniform int pointLightsNum;
 uniform DirLight dirLights[20];
 uniform int dirLightsNum;
 
-float shininess = 32.0f;
+float shininess = 16.0f;
 float specularity = 0.5f;
 
 vec3 calculatePointLight(PointLight light)
@@ -93,20 +93,12 @@ vec3 calculateDirLight(DirLight light)
 
     float spec;
 
-    bool blin = false;
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
+    
 
-    if(blin)
-    {
-        vec3 halfwayDir = normalize(lightDir + viewDir);
-        spec = pow(max(dot(normal, halfwayDir), 0.0), 16.0);
-    }
-    else
-    {
-        vec3 reflectDir = reflect(-lightDir, norm);
-        spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-    }
 
-    vec3 specular = light.color * spec * specularity * texture(specTexture, texCoords).rgb;
+    vec3 specular = light.color * spec * specularity * length(texture(specTexture, texCoords).rgb);
 
     return (diffuse + specular);
 }
