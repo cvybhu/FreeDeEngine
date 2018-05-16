@@ -22,7 +22,6 @@ namespace Window
         glfwWaitEvents();
     }
 
-
     // -- Callbacks \/ --
 
     void mouse_callback(GLFWwindow* win, double xpos, double ypos)

@@ -11,6 +11,7 @@
 namespace Game
 {
     std::vector<PointLight> pointLights;
+    std::vector<DirLight> dirLights;
     std::vector<PhysicsEntity> physicsEntities;
 
     FreeCam cam;
@@ -23,7 +24,6 @@ namespace Game
 
     GLuint skyboxIndex;
     GLuint skyboxVAO, skyboxVBO;
-
 
 
     void initFramebuffer()
@@ -121,15 +121,15 @@ namespace Game
          1.0f, -1.0f, -1.0f,
         -1.0f, -1.0f,  1.0f,
          1.0f, -1.0f,  1.0f
-    };
+        };
 
         glGenVertexArrays(1, &skyboxVAO);
-    glGenBuffers(1, &skyboxVBO);
-    glBindVertexArray(skyboxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glGenBuffers(1, &skyboxVBO);
+        glBindVertexArray(skyboxVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     }
 
 
@@ -145,6 +145,12 @@ namespace Game
 
         skyboxIndex = skyboxMountLake.glIndx;
 
+        DirLight sun;
+        sun.color = {1, 1, 0};
+        sun.dir = {-0.2f, -1.0f, -0.3f};
+
+        dirLights.emplace_back(sun);
+
         PointLight light;
         light.pos = {5, 5, 5};
         light.color = glm::vec3(1.0, 0.2, 0.5);
@@ -159,8 +165,8 @@ namespace Game
         light2.linear = 0.07f;
         light2.quadratic = 0.004f;
 
-        pointLights.emplace_back(light);
-        pointLights.emplace_back(light2);
+        //pointLights.emplace_back(light);
+        //pointLights.emplace_back(light2);
 
         PhysicsEntity lightPhys;
         lightPhys.position = light.pos;
@@ -206,6 +212,20 @@ namespace Game
             shader.set1Float(("pointLights[" + iAsString + "].constant").c_str(), light.constant);
             shader.set1Float(("pointLights[" + iAsString + "].linear").c_str(), light.linear);
             shader.set1Float(("pointLights[" + iAsString + "].quadratic").c_str(), light.quadratic);
+        }
+    }
+
+    void loadDirLightsToShader(std::vector<DirLight>& lights, Shader& shader)
+    {
+        shader.set1Int("dirLightsNum", lights.size());
+
+        for(unsigned i = 0; i < lights.size(); i++)
+        {
+            auto& light = lights[i];
+            std::string&& iAsString = convert2String(i);
+
+            shader.setVec3(("dirLights[" + iAsString + "].color").c_str(), light.color);
+            shader.setVec3(("dirLights[" + iAsString + "].dir").c_str(), light.color);
         }
     }
 
@@ -264,6 +284,7 @@ namespace Game
 
 
         loadPointLightsToShader(pointLights, lightShader);
+        loadDirLightsToShader(dirLights, lightShader);
 
         lightShader.setMat4("view", viewMatrix);
         lightShader.setMat4("projection", projectionMatrix);
@@ -283,7 +304,7 @@ namespace Game
         glBindTexture(GL_TEXTURE_2D, planeMesh.specTexture->glIndx);
 
         glBindVertexArray(planeMesh.VAO);
-        lightShader.setMat4("model", glm::rotate(glm::mat4(1), (float)glm::radians(90.0), glm::vec3(0, 0, 1)));
+        lightShader.setMat4("model", glm::rotate(glm::mat4(1), (float)glm::radians(90.f), glm::vec3(0, 0, 1)));
         glDrawArrays(GL_TRIANGLES, 0, planeMesh.vertsNum);
 
 

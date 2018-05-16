@@ -176,8 +176,6 @@ struct FreeCam
 };
 
 
-
-
 struct PointLight
 {
     glm::vec3 pos;
