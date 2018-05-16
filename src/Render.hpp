@@ -56,6 +56,27 @@ namespace Storage  //all Textures are held in global Storage and can be accesed 
 }
 
 
+struct CubeTexture
+{
+    unsigned char* data[6];
+    int width, height;
+
+    GLuint glIndx;
+
+    bool isOnRAM, isOnGPU;
+
+    void loadToRAM(const char* fileName);    //its expected that cubemap is like "fileName_up.jpg", _down, _front _back _right _left
+    void loadToGPU();                       //also all of the files should have same resolution
+
+    void unloadFromRAM();
+    void unloadFromGPU();
+};
+
+namespace Storage   //all CubeTextures are held in global Storage and can be accesed via Storage::getCubeTex("<fileName>")
+{
+    CubeTexture& getCubeTex(const char* fileName);
+}
+
 
 
 

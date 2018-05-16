@@ -87,6 +87,7 @@ namespace Window
 void Texture::loadToRAM(const char* filePath)
 {
     stbi_set_flip_vertically_on_load(true);
+    //stbi_set_flip_horizontally_on_load(true);
     data = stbi_load(filePath, &width, &height, &nrChannels, 0);
 
     if (!data)
@@ -96,7 +97,7 @@ void Texture::loadToRAM(const char* filePath)
 
     isOnRAM = true;
 
-    std::cout << "[TEXLOAD] Succesfully loaded " << filePath << "!\n";
+    std::cout << "[TEXLOAD]Succesfully loaded " << filePath << "!\n";
 }
 
 
@@ -137,6 +138,62 @@ void Texture::unloadFromGPU()
 
 unsigned char* Texture::getPixel(const int& x, const int& y){return data + nrChannels*sizeof(unsigned char)*y*width + nrChannels*sizeof(unsigned char*)*x;}
 const unsigned char* Texture::getPixel(const int& x, const int& y) const {return data + nrChannels*sizeof(unsigned char)*y*width + nrChannels*sizeof(unsigned char*)*x;}
+
+
+
+void CubeTexture::loadToRAM(const char* fileName)
+{
+    int  nrChannels;
+    stbi_set_flip_vertically_on_load(true);
+    data[0] = stbi_load((std::string(fileName) + "_left.jpg").c_str(), &width, &height, &nrChannels, 0); //X+
+    data[1] = stbi_load((std::string(fileName) + "_right.jpg").c_str(), &width, &height, &nrChannels, 0);  //X-
+    data[2] = stbi_load((std::string(fileName) + "_back.jpg").c_str(), &width, &height, &nrChannels, 0);    //Y+
+    data[3] = stbi_load((std::string(fileName) + "_front.jpg").c_str(), &width, &height, &nrChannels, 0);  //Y-
+    data[4] = stbi_load((std::string(fileName) + "_up.jpg").c_str(), &width, &height, &nrChannels, 0);  //Z+
+    data[5] = stbi_load((std::string(fileName) + "_down.jpg").c_str(), &width, &height, &nrChannels, 0); //Z-
+
+    for(int i = 0; i < 6; i++)
+        if(!data[i])
+        {
+            std::cout << "[TEXLOAD] Failed to load " << fileName << "!!!!!!!!!!!!!!\n";
+        }
+
+    isOnRAM = true;
+}
+
+void CubeTexture::loadToGPU()
+{
+    glGenTextures(1, &glIndx);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, glIndx);
+
+    for(int i = 0; i < 6; i++)
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data[i]);
+
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    isOnGPU = true;
+}
+
+
+void CubeTexture::unloadFromRAM()
+{
+    for(int i = 0; i < 6; i++)
+        stb_image_free(data[i]);
+
+    isOnRAM = false;
+}
+
+void CubeTexture::unloadFromGPU()
+{
+    //TODO
+
+    isOnGPU = false;
+}
 
 
 
@@ -201,7 +258,7 @@ void Shader::load(const std::string& path)
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    std::cout << "[SHADERLOAD] succesfully loaded " << path << "!\n";
+    std::cout << "[SHADERLOAD]Succesfully loaded " << path << "!\n";
 }
 
 
@@ -298,7 +355,7 @@ void Mesh::loadToRAM(const char* filePath)
 
     file.close();
 
-    std::cout << "[MESHLOAD]Load of " << filePath << " succesful! (" << verts.size() << " vertices)\n";
+    std::cout << "[MESHLOAD]Succesfully loaded " << filePath << " (" << verts.size() << " vertices)\n";
 
     vertsNum = verts.size();
 }
@@ -451,6 +508,7 @@ namespace Storage
     std::map<std::string, Shader> shaders;
     std::map<std::string, Texture> textures;
     std::map<std::string, Mesh> meshes;
+    std::map<std::string, CubeTexture> cubeTextures;
 
 
     Shader& getShader(const char* filePath)
@@ -468,5 +526,10 @@ namespace Storage
     Mesh& getMesh(const char* filePath)
     {
         return meshes[filePath];
+    }
+
+    CubeTexture& getCubeTex(const char* fileName)
+    {
+        return cubeTextures[fileName];
     }
 }

@@ -19,7 +19,10 @@ namespace Game
     GLuint framebuffer;
     GLuint texColorBuffer;
     GLuint depthStencRenderBuff;
-    GLuint screenQuadVBO, screenQuadVAO;
+    GLuint screenQuadVAO, screenQuadVBO;
+
+    GLuint skyboxIndex;
+    GLuint skyboxVAO, skyboxVBO;
 
 
 
@@ -73,9 +76,74 @@ namespace Game
     }
 
 
+    void initSkyboxVAO()
+    {
+        float skyboxVertices[] = {
+        // positions
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f
+    };
+
+        glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    }
+
+
     void init()
     {
         initFramebuffer();
+        initSkyboxVAO();
+
+        CubeTexture& skyboxMountLake = Storage::getCubeTex("src/tex/mountainsCube");
+
+        skyboxMountLake.loadToRAM("tex/mountainsCube");
+        skyboxMountLake.loadToGPU();
+
+        skyboxIndex = skyboxMountLake.glIndx;
 
         PointLight light;
         light.pos = {5, 5, 5};
@@ -123,7 +191,6 @@ namespace Game
     }
 
 
-
     void loadPointLightsToShader(std::vector<PointLight>& lights, Shader& shader)
     {
         shader.set1Int("pointLightsNum", lights.size());
@@ -144,7 +211,7 @@ namespace Game
 
     void drawLights(std::vector<PointLight>& lights, glm::mat4& projectionMatrix, glm::mat4& viewMatrix)
     {
-        Shader& allWhite = Storage::getShader("src/shaders/allWhite");;
+        Shader& allWhite = Storage::getShader("src/shaders/allWhite");
 
         allWhite.use();
 
@@ -171,10 +238,22 @@ namespace Game
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(1, 1, 1, 1);
 
 
-        drawLights(pointLights, projectionMatrix, viewMatrix);
+        Shader& skyboxShader = Storage::getShader("src/shaders/skybox");
+        glDepthMask(GL_FALSE);
+        skyboxShader.use();
+
+        skyboxShader.setMat4("view", glm::mat3(viewMatrix));
+        skyboxShader.setMat4("projection", projectionMatrix);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxIndex);
+
+        glBindVertexArray(skyboxVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthMask(GL_TRUE);
 
 
         Shader& lightShader = Storage::getShader("src/shaders/light");
@@ -205,7 +284,7 @@ namespace Game
         lightShader.setMat4("model", glm::rotate(glm::mat4(1), (float)glm::radians(90.0), glm::vec3(0, 0, 1)));
         glDrawArrays(GL_TRIANGLES, 0, planeMesh.vertsNum);
 
-        drawLights(pointLights, projectionMatrix, viewMatrix);
+
 
 
         Mesh& stonePlace = Storage::getMesh("mesh/stonePlace.obj");
@@ -237,10 +316,12 @@ namespace Game
         }
 
 
+
+        drawLights(pointLights, projectionMatrix, viewMatrix);
+
         Shader& postProcess = Storage::getShader("src/shaders/postProcessTest");
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         postProcess.use();
