@@ -165,8 +165,7 @@ namespace Game
         light2.linear = 0.07f;
         light2.quadratic = 0.004f;
 
-        //pointLights.emplace_back(light);
-        //pointLights.emplace_back(light2);
+        pointLights.emplace_back(light); pointLights.emplace_back(light2);
 
         PhysicsEntity lightPhys;
         lightPhys.position = light.pos;
@@ -200,7 +199,7 @@ namespace Game
 
     void loadPointLightsToShader(std::vector<PointLight>& lights, Shader& shader)
     {
-        shader.set1Int("pointLightsNum", lights.size());
+        shader.set1Int("pointLightsNum", (int)lights.size());
 
         for(unsigned i = 0; i < lights.size(); i++)
         {

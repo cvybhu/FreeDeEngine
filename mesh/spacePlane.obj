@@ -1,4 +1,4 @@
-# Blender v2.78 (sub 0) OBJ File: ''
+﻿# Blender v2.78 (sub 0) OBJ File: ''
 # www.blender.org
 mtllib spacePlane.mtl
 o Cylinder
@@ -3485,6 +3485,6 @@ f 143/818/50 409/819/50 578/820/50
 f 427/76/49 579/75/49 369/817/49
 
 diffTex tex/pipes.jpg
-specTex tex/pipes_spec2.jpg
+specTex tex/pipes_spec.jpg
 
 
