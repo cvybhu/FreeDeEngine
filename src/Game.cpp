@@ -123,13 +123,13 @@ namespace Game
          1.0f, -1.0f,  1.0f
         };
 
-        glGenVertexArrays(1, &skyboxVAO);
-        glGenBuffers(1, &skyboxVBO);
-        glBindVertexArray(skyboxVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     }
 
 
@@ -251,19 +251,10 @@ namespace Game
 
     }
 
-
-    void draw()
+    void drawSkybox(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
     {
-        glm::mat4 projectionMatrix = cam.getProjectionMatrix();
-        glm::mat4 viewMatrix = cam.getViewMatrix();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        glClearColor(1, 1, 1, 1);
-
-
         Shader& skyboxShader = Storage::getShader("src/shaders/skybox");
+        
         glDepthMask(GL_FALSE);
         skyboxShader.use();
 
@@ -277,68 +268,74 @@ namespace Game
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glDepthMask(GL_TRUE);
 
+    }
 
-        Shader& lightShader = Storage::getShader("src/shaders/light");
+    void setupMeshForDraw(const Mesh& mesh)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mesh.diffTexture->glIndx);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, mesh.specTexture->glIndx);
 
-        lightShader.use();
+        glBindVertexArray(mesh.VAO);
+        
+    }
 
+    void drawMesh(const Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader)
+    {
+        shader.setMat4("model", modelMatrix);
+        glDrawArrays(GL_TRIANGLES, 0, mesh.vertsNum);
+    }
 
+    void draw()
+    {
+        glm::mat4 projectionMatrix = cam.getProjectionMatrix();
+        glm::mat4 viewMatrix = cam.getViewMatrix();
         loadPointLightsToShader(pointLights, lightShader);
         loadDirLightsToShader(dirLights, lightShader);
 
-        lightShader.setMat4("view", viewMatrix);
-        lightShader.setMat4("projection", projectionMatrix);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(1, 1, 1, 1);
 
-        lightShader.setVec3("ambientLight", glm::vec3(0.3));
-        lightShader.setVec3("viewPos", cam.pos);
+        drawSkybox(viewMatrix, projectionMatrix);
+       
 
-        lightShader.set1Int("diffTexture", 0);
-        lightShader.set1Int("specTexture", 1);
+        Shader& lightUseShader = Storage::getShader("src/shaders/light");
+
+        lightUseShader.use();
+
+
+        loadPointLightsToShader(pointLights, lightUseShader);
+
+        lightUseShader.setMat4("view", viewMatrix);
+        lightUseShader.setMat4("projection", projectionMatrix);
+
+        lightUseShader.setVec3("ambientLight", glm::vec3(0.3));
+        lightUseShader.setVec3("viewPos", cam.pos);
+
+        lightUseShader.set1Int("diffTexture", 0);
+        lightUseShader.set1Int("specTexture", 1);
 
 
         Mesh& planeMesh = Storage::getMesh("mesh/spacePlane.obj");
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, planeMesh.diffTexture->glIndx);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, planeMesh.specTexture->glIndx);
-
-        glBindVertexArray(planeMesh.VAO);
-        lightShader.setMat4("model", glm::rotate(glm::mat4(1), (float)glm::radians(90.f), glm::vec3(0, 0, 1)));
-        glDrawArrays(GL_TRIANGLES, 0, planeMesh.vertsNum);
-
-
+        setupMeshForDraw(planeMesh);
+        drawMesh(planeMesh, glm::mat4(1), lightUseShader);
 
 
         Mesh& stonePlace = Storage::getMesh("mesh/stonePlace.obj");
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, stonePlace.diffTexture->glIndx);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, stonePlace.specTexture->glIndx);
-
-        glBindVertexArray(stonePlace.VAO);
-        lightShader.setMat4("model", glm::translate(glm::mat4(1), glm::vec3(0, -12, 0)));
-        glDrawArrays(GL_TRIANGLES, 0, stonePlace.vertsNum);
+        setupMeshForDraw(stonePlace);
+        glm::mat4 stonePlaceModel = glm::translate(glm::mat4(1), glm::vec3(0, -12, 0));
+        drawMesh(stonePlace, stonePlaceModel, lightUseShader);
 
 
 
         Mesh& grass = Storage::getMesh("mesh/grass.obj");
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, grass.diffTexture->glIndx);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, grass.specTexture->glIndx);
-
-        glBindVertexArray(grass.VAO);
-
+        setupMeshForDraw(grass);
         for(glm::vec3 pos : {glm::vec3(-3, -8, -1), glm::vec3(-2, -7, -1), glm::vec3(-4, -6.3, -1)})
-        {
-            lightShader.setMat4("model", glm::translate(glm::mat4(1), pos));
-            glDrawArrays(GL_TRIANGLES, 0, grass.vertsNum);
-        }
-
-
+            drawMesh(grass, glm::translate(glm::mat4(1), pos), lightUseShader);
+        
 
         drawLights(pointLights, projectionMatrix, viewMatrix);
 

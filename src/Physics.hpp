@@ -7,7 +7,7 @@ struct PhysicsEntity
     glm::fvec3 position;
     glm::fvec3 linearVelocity;
     glm::fvec3 linearAcceleration;
-
+    
     void update(const double dt);                                       
 
 private:
