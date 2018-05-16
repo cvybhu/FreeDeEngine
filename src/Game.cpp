@@ -147,14 +147,14 @@ namespace Game
 
         PointLight light;
         light.pos = {5, 5, 5};
-        light.color = glm::vec3(1.0);
+        light.color = glm::vec3(1.0, 0.2, 0.5);
         light.constant = 1.f;
         light.linear = 0.05f;
         light.quadratic = 0.004f;
 
         PointLight light2;
         light2.pos = {3, 1, 4};
-        light2.color = glm::vec3(0.0);
+        light2.color = glm::vec3(0.3, 0.4, 0.9);
         light2.constant = 1.f;
         light2.linear = 0.07f;
         light2.quadratic = 0.004f;
@@ -184,7 +184,7 @@ namespace Game
             PhysicsEntity& current = physicsEntities[i];
             current.update(deltaTime);
 
-            pointLights[i].pos = current.position;
+            //pointLights[i].pos = current.position;
         }
 
         if(Window::isPressed(GLFW_KEY_P))
@@ -212,19 +212,20 @@ namespace Game
 
     void drawLights(std::vector<PointLight>& lights, glm::mat4& projectionMatrix, glm::mat4& viewMatrix)
     {
-        Shader& allWhite = Storage::getShader("src/shaders/allWhite");
+        Shader& oneColor = Storage::getShader("src/shaders/oneColor");
 
-        allWhite.use();
+        oneColor.use();
 
-        allWhite.setMat4("projection", projectionMatrix);
-        allWhite.setMat4("view", viewMatrix);
+        oneColor.setMat4("projection", projectionMatrix);
+        oneColor.setMat4("view", viewMatrix);
 
         Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
         glBindVertexArray(lightMesh.VAO);
 
         for(PointLight& light : lights)
         {
-            allWhite.setMat4("model", glm::translate(glm::mat4(1), light.pos));
+            oneColor.setVec3("color", glm::normalize(light.color));
+            oneColor.setMat4("model", glm::translate(glm::mat4(1), light.pos));
             glDrawArrays(GL_TRIANGLES, 0, lightMesh.vertsNum);
         }
 
