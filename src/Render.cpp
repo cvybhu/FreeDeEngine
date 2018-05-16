@@ -34,8 +34,6 @@ namespace Window
 
     void framebuffer_size_callback(GLFWwindow* win, int newWidth, int newHeight)
     {
-        std::cout << "SIze changeeed!!!!!111'n";
-
         width = newWidth;
         height = newHeight;
         glViewport(0, 0, newWidth, newHeight);

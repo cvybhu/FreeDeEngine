@@ -166,14 +166,12 @@ namespace Game
         lightPhys.position = light.pos;
         lightPhys.linearVelocity = glm::fvec3(0.3, 0.2, 0.01);
         lightPhys.linearAcceleration = glm::fvec3(0.0, 0.8, 0.0);
-        lightPhys.entityID = 0;
         physicsEntities.emplace_back(lightPhys);
 
         PhysicsEntity lightPhys2;
         lightPhys2.position = light2.pos;
         lightPhys2.linearVelocity = glm::fvec3(0.3, 0.2, 0.51);
         lightPhys2.linearAcceleration = glm::fvec3(0.0, 0.8, 0.0);
-        lightPhys2.entityID = 1;
         physicsEntities.emplace_back(lightPhys2);
     }
 
@@ -183,7 +181,10 @@ namespace Game
 
         for (GLuint i = 0; i<pointLights.size(); i++)
         {
-            updatePosition(pointLights[i].pos, physicsEntities[i], deltaTime);
+            PhysicsEntity& current = physicsEntities[i];
+            current.update(deltaTime);
+
+            pointLights[i].pos = current.position;
         }
 
         if(Window::isPressed(GLFW_KEY_P))
