@@ -34,6 +34,8 @@ namespace Window
 
     void framebuffer_size_callback(GLFWwindow* win, int newWidth, int newHeight)
     {
+        std::cout << "SIze changeeed!!!!!111'n";
+
         width = newWidth;
         height = newHeight;
         glViewport(0, 0, newWidth, newHeight);
@@ -57,6 +59,7 @@ namespace Window
         height = 900;
 
         window = glfwCreateWindow(width, height, "xertz engine", NULL, NULL);
+        glfwGetWindowSize(window, &width, &height);
         //glfwSetWindowPos(window, 200, 50);
         if (window == NULL)
         {
@@ -183,7 +186,7 @@ void CubeTexture::loadToGPU()
 void CubeTexture::unloadFromRAM()
 {
     for(int i = 0; i < 6; i++)
-        stb_image_free(data[i]);
+        stbi_image_free(data[i]);
 
     isOnRAM = false;
 }
