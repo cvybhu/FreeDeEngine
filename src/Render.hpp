@@ -144,8 +144,6 @@ namespace Storage  //all Meshes are held in global Storage and can be accesed vi
 }
 
 
-
-
 struct FreeCam
 {
     FreeCam(glm::vec3 position = {0, 0, 0}, glm::vec2 rotation = {0, 0}, float speed = 10);

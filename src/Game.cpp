@@ -123,13 +123,45 @@ namespace Game
          1.0f, -1.0f,  1.0f
         };
 
-    glGenVertexArrays(1, &skyboxVAO);
-    glGenBuffers(1, &skyboxVBO);
-    glBindVertexArray(skyboxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glGenVertexArrays(1, &skyboxVAO);
+        glGenBuffers(1, &skyboxVBO);
+        glBindVertexArray(skyboxVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    }
+
+    void initInstancedParticles()
+    {
+        glm::vec3 poss[] = {glm::vec3(0), glm::vec3(1), glm::vec3(2)};
+        std::vector<glm::mat4> modelMats(sizeof(poss)/sizeof(glm::vec3));
+
+        for(int i = 0; i < modelMats.size(); i++)
+            modelMats[i] = glm::mat4(1);//glm::translate(glm::mat4(1), poss[i]);
+
+        Mesh& particle = Storage::getMesh("mesh/light.obj");
+        glBindVertexArray(particle.VAO);
+
+        unsigned int buffer;
+        glGenBuffers(1, &buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, buffer);
+        glBufferData(GL_ARRAY_BUFFER, modelMats.size() * sizeof(glm::mat4), &modelMats[0], GL_STATIC_DRAW);
+        // vertex Attributes
+        GLsizei vec4Size = sizeof(glm::vec4);
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
     }
 
 
@@ -277,7 +309,6 @@ namespace Game
         glBindTexture(GL_TEXTURE_2D, mesh.specTexture->glIndx);
 
         glBindVertexArray(mesh.VAO);
-
     }
 
     void drawMesh(const Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader)
@@ -335,8 +366,19 @@ namespace Game
         for(glm::vec3 pos : {glm::vec3(-3, -8, -1), glm::vec3(-2, -7, -1), glm::vec3(-4, -6.3, -1)})
             drawMesh(grass, glm::translate(glm::mat4(1), pos), lightUseShader);
 
+        Shader& instanceShader = Storage::getShader("src/shaders/instance");
 
-        drawLights(pointLights, projectionMatrix, viewMatrix);
+        Mesh& particle = Storage::getMesh("mesh/light.obj");
+
+        instanceShader.use();
+        instanceShader.setMat4("view", viewMatrix);
+        instanceShader.setMat4("projection", projectionMatrix);
+
+        setupMeshForDraw(particle);
+
+        glDrawArraysInstanced(GL_TRIANGLES, 0, particle.vertsNum, 3);
+
+        // drawLights(pointLights, projectionMatrix, viewMatrix);
 
 
         Shader& postProcess = Storage::getShader("src/shaders/postProcessTest");

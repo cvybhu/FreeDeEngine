@@ -26,7 +26,7 @@ int main()
     }
 
 
-    const char* shaders2Load[] = {"src/shaders/light", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox"};
+    const char* shaders2Load[] = {"src/shaders/light", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {
