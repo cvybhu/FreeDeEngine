@@ -421,6 +421,7 @@ namespace Window
 
         window = glfwCreateWindow(width, height, "xertz engine", NULL, NULL);
         glfwGetWindowSize(window, &width, &height);
+
         //glfwSetWindowPos(window, 200, 50);
         if (window == NULL)
         {
@@ -436,6 +437,7 @@ namespace Window
         {
             std::cout << "Failed to initialize GLAD\n";
         }
+        glViewport(0, 0, width, height);
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_STENCIL_TEST);
@@ -952,23 +954,25 @@ namespace Game
 
     void initFramebuffer()
     {
+        glEnable(GL_MULTISAMPLE);
+
         glGenFramebuffers(1, &framebuffer);
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
         glGenTextures(1, &texColorBuffer);
-        glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Window::width, Window::height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texColorBuffer);
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, Window::width, Window::height, GL_TRUE);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         //glBindTexture(GL_TEXTURE_2D, 0); //is this really necessary?
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texColorBuffer, 0);
 
         glGenRenderbuffers(1, &depthStencRenderBuff);
         glBindRenderbuffer(GL_RENDERBUFFER, depthStencRenderBuff);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Window::width, Window::height);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, Window::width, Window::height);
         //glBindRenderbuffer(GL_RENDERBUFFER, 0); //is this really necessary?
 
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencRenderBuff);
@@ -1228,6 +1232,7 @@ namespace Game
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
         glClearColor(1, 1, 1, 1);
 
         drawSkybox(viewMatrix, projectionMatrix);
@@ -1263,8 +1268,10 @@ namespace Game
 
         Mesh& grass = Storage::getMesh("mesh/grass.obj");
         setupMeshForDraw(grass);
+        glDisable(GL_CULL_FACE);
         for(glm::vec3 pos : {glm::vec3(-3, -8, -1), glm::vec3(-2, -7, -1), glm::vec3(-4, -6.3, -1)})
             drawMesh(grass, glm::translate(glm::mat4(1), pos), lightUseShader);
+        glEnable(GL_CULL_FACE);
 
 
 
@@ -1296,7 +1303,7 @@ namespace Game
         glBindVertexArray(screenQuadVAO);
         glDisable(GL_DEPTH_TEST);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texColorBuffer);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 }

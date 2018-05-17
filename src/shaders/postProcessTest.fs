@@ -3,7 +3,7 @@ out vec4 FragColor;
 
 in vec2 texCoords;
 
-uniform sampler2D screenTexture;
+uniform sampler2DMS screenTexture;
 
 
 float offset = 1.0 / 700.0;
@@ -34,7 +34,6 @@ float blurKernel[9] = float[](
 
 
 
-
 void main()
 {
     /*
@@ -46,5 +45,10 @@ void main()
     FragColor = vec4(res, 1);
     */
 
-    FragColor = texture(screenTexture, texCoords);
+    vec2 texSize = textureSize(screenTexture);
+
+    for(int i = 0; i < 4; i++)
+        FragColor += texelFetch(screenTexture, ivec2(texCoords.x*texSize.x, texCoords.y*texSize.y), i);
+
+    FragColor /= 4.0;
 }
