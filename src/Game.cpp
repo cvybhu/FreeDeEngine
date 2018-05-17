@@ -134,11 +134,11 @@ namespace Game
 
     void initInstancedParticles()
     {
-        glm::vec3 poss[] = {glm::vec3(0), glm::vec3(1), glm::vec3(2)};
+        glm::vec3 poss[] = {glm::vec3(1), glm::vec3(2), glm::vec3(3), glm::vec3(4), glm::vec3(5)};
         std::vector<glm::mat4> modelMats(sizeof(poss)/sizeof(glm::vec3));
 
         for(int i = 0; i < modelMats.size(); i++)
-            modelMats[i] = glm::mat4(1);//glm::translate(glm::mat4(1), poss[i]);
+            modelMats[i] = glm::translate(glm::mat4(1), poss[i]);
 
         Mesh& particle = Storage::getMesh("mesh/light.obj");
         glBindVertexArray(particle.VAO);
@@ -169,6 +169,7 @@ namespace Game
     {
         initFramebuffer();
         initSkyboxVAO();
+        initInstancedParticles();
 
         CubeTexture& skyboxMountLake = Storage::getCubeTex("src/tex/mountainsCube");
 
@@ -376,7 +377,7 @@ namespace Game
 
         setupMeshForDraw(particle);
 
-        glDrawArraysInstanced(GL_TRIANGLES, 0, particle.vertsNum, 3);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, particle.vertsNum, 5);
 
         // drawLights(pointLights, projectionMatrix, viewMatrix);
 
