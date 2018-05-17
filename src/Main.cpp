@@ -187,7 +187,6 @@ struct Mesh //holds vertex data and pointers to used textures from global storag
     void unloadFromRAM();
     void unloadFromGPU();
 
-
     Texture* diffTexture;
     Texture* specTexture;
 
@@ -587,6 +586,35 @@ void Shader::load(const std::string& path)
     }
 
 
+    //geometry shader
+    std::ifstream geoShaderFile(path + ".gs");
+
+    bool isGeometryShader = geoShaderFile.is_open();
+
+    GLuint geoShader = -1;
+    if(isGeometryShader)
+    {
+        std::string geoSource = readFile((path + ".gs").c_str());
+        const char* geoSourceCstr = geoSource.c_str();
+
+        geoShader = glCreateShader(GL_GEOMETRY_SHADER);
+        glShaderSource(geoShader, 1, &geoSourceCstr, NULL);
+        glCompileShader(geoShader);
+
+        glGetShaderiv(geoShader, GL_COMPILE_STATUS, &success);
+
+        if(!success)
+        {
+            glGetShaderInfoLog(geoShader, 512, NULL, infoLog);
+            std::cout << "[SHADER ERROR] - failed to compile shader " << (path + ".gs") << "!\n";
+            std::cout << "log:\n" << infoLog << '\n';
+            return;
+        }
+    }
+
+
+
+
     //fragment shader
     std::string fragSource = readFile((path + ".fs").c_str());
     const char* fragSourceCstr = fragSource.c_str();
@@ -609,6 +637,10 @@ void Shader::load(const std::string& path)
     //the Program
     program = glCreateProgram();
     glAttachShader(program, vertexShader);
+
+    if(isGeometryShader)
+        glAttachShader(program, geoShader);
+
     glAttachShader(program, fragmentShader);
     glLinkProgram(program);
 
@@ -621,6 +653,10 @@ void Shader::load(const std::string& path)
     }
 
     glDeleteShader(vertexShader);
+
+    if(isGeometryShader)
+        glDeleteShader(geoShader);
+
     glDeleteShader(fragmentShader);
 
     std::cout << "[SHADERLOAD]Succesfully loaded " << path << "!\n";
@@ -729,7 +765,6 @@ void Mesh::unloadFromRAM()
 {
     verts.clear(); verts.shrink_to_fit();
 }
-
 
 void Mesh::loadToGPU()
 {
@@ -901,7 +936,7 @@ namespace Storage
 namespace Game
 {
     std::vector<PointLight> pointLights;
-    std::vector<DirLight> dirLights;
+    DirLight sun;
 
     FreeCam cam;
 
@@ -1022,13 +1057,13 @@ namespace Game
 
     void initInstancedParticles()
     {
-        glm::vec3 poss[] = {glm::vec3(1), glm::vec3(2), glm::vec3(3), glm::vec3(4), glm::vec3(5)};
+        glm::vec3 poss[] = {glm::vec3(0, 13, 0), glm::vec3(0, 14, 0), glm::vec3(0, 15, 0), glm::vec3(0, 16, 0), glm::vec3(0, 17, 0)};
         std::vector<glm::mat4> modelMats(sizeof(poss)/sizeof(glm::vec3));
 
         for(int i = 0; i < modelMats.size(); i++)
             modelMats[i] = glm::translate(glm::mat4(1), poss[i]);
 
-        Mesh& particle = Storage::getMesh("mesh/light.obj");
+        Mesh& particle = Storage::getMesh("mesh/particle.obj");
         glBindVertexArray(particle.VAO);
 
         unsigned int buffer;
@@ -1066,21 +1101,19 @@ namespace Game
 
         skyboxIndex = skyboxMountLake.glIndx;
 
-        DirLight sun;
-        sun.color = {1, 1, 0};
-        sun.dir = {-0.2f, -1.0f, -0.3f};
+        sun.color = glm::vec3(glm::vec2(0.3), 0);
+        sun.dir = {0, -1.0f, -1.0f};
 
-        dirLights.emplace_back(sun);
 
         PointLight light;
-        light.pos = {5, 5, 5};
+        light.pos = {5, -5, 2};
         light.color = glm::vec3(1.0, 0.2, 0.5);
         light.constant = 1.f;
         light.linear = 0.05f;
         light.quadratic = 0.004f;
 
         PointLight light2;
-        light2.pos = {3, 1, 4};
+        light2.pos = {-5, -10, 3};
         light2.color = glm::vec3(0.3, 0.4, 0.9);
         light2.constant = 1.f;
         light2.linear = 0.07f;
@@ -1116,6 +1149,7 @@ namespace Game
         }
     }
 
+    /*
     void loadDirLightsToShader(std::vector<DirLight>& lights, Shader& shader)
     {
         shader.set1Int("dirLightsNum", lights.size());
@@ -1129,7 +1163,7 @@ namespace Game
             shader.setVec3(("dirLights[" + iAsString + "].dir").c_str(), light.dir);
         }
     }
-
+    */
 
     void drawLights(std::vector<PointLight>& lights, glm::mat4& projectionMatrix, glm::mat4& viewMatrix)
     {
@@ -1199,12 +1233,14 @@ namespace Game
         drawSkybox(viewMatrix, projectionMatrix);
 
 
-        Shader& lightUseShader = Storage::getShader("src/shaders/light");
+        Shader& lightUseShader = Storage::getShader("src/shaders/lightUse");
 
         lightUseShader.use();
 
         loadPointLightsToShader(pointLights, lightUseShader);
-        loadDirLightsToShader(dirLights, lightUseShader);
+        //loadDirLightsToShader(dirLights, lightUseShader);
+        lightUseShader.setVec3("dirLight.color", sun.color);
+        lightUseShader.setVec3("dirLight.dir", sun.dir);
 
         lightUseShader.setMat4("view", viewMatrix);
         lightUseShader.setMat4("projection", projectionMatrix);
@@ -1230,9 +1266,13 @@ namespace Game
         for(glm::vec3 pos : {glm::vec3(-3, -8, -1), glm::vec3(-2, -7, -1), glm::vec3(-4, -6.3, -1)})
             drawMesh(grass, glm::translate(glm::mat4(1), pos), lightUseShader);
 
+
+
+
+
         Shader& instanceShader = Storage::getShader("src/shaders/instance");
 
-        Mesh& particle = Storage::getMesh("mesh/light.obj");
+        Mesh& particle = Storage::getMesh("mesh/particle.obj");
 
         instanceShader.use();
         instanceShader.setMat4("view", viewMatrix);
@@ -1242,7 +1282,10 @@ namespace Game
 
         glDrawArraysInstanced(GL_TRIANGLES, 0, particle.vertsNum, 5);
 
-        // drawLights(pointLights, projectionMatrix, viewMatrix);
+
+
+
+        drawLights(pointLights, projectionMatrix, viewMatrix);
 
         Shader& postProcess = Storage::getShader("src/shaders/postProcessTest");
 
@@ -1261,7 +1304,6 @@ namespace Game
 
 using namespace std;
 
-
 int main()
 {
     //Initialization and asset loading
@@ -1270,7 +1312,7 @@ int main()
     Window::init();
 
 
-    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj"};
+    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj", "mesh/particle.obj"};
 
     for(unsigned i = 0; i < sizeof(meshes2Load)/sizeof(const char*); i++)
     {
@@ -1280,7 +1322,7 @@ int main()
     }
 
 
-    const char* shaders2Load[] = {"src/shaders/light", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance"};
+    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {
