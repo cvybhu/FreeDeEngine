@@ -75,6 +75,10 @@ std::string convert2String(const unsigned&);
 std::string convert2String(const unsigned long long&);
 
 
+std::ostream& operator<<(std::ostream& os, const glm::vec3& v){return os << "(" << v.x << "," << v.y << "," << v.z << ")", os;}
+
+
+
 
 
 namespace Window
@@ -969,6 +973,10 @@ namespace Game
     GLuint skyboxIndex;
     GLuint skyboxVAO, skyboxVBO;
 
+    GLuint dirLightShadowFBO;
+    GLuint dirLightShadowDepth;
+    glm::mat4 dirLightSpaceMat;
+
 
     void initFramebuffer()
     {
@@ -1122,6 +1130,37 @@ namespace Game
         glVertexAttribDivisor(6, 1);
     }
 
+    void initDirLightShadow(glm::ivec2 shadowRes = glm::ivec2(1024))
+    {
+        glGenFramebuffers(1, &dirLightShadowFBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, dirLightShadowFBO);
+
+        glGenTextures(1, &dirLightShadowDepth);
+        glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowRes.x, shadowRes.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dirLightShadowDepth, 0);
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+
+        float near_plane = 1.0f, far_plane = 20.5f;
+        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+
+        glm::vec3 center = glm::vec3(0);
+        glm::vec3 lightDir = glm::vec3(0, -1, -1);
+        glm::vec3 side = glm::cross(sun.dir, glm::vec3(0, 0, 1));
+        glm::vec3 up = glm::cross(side, sun.dir);
+        if(up.z < 0)up = -up;
+
+        glm::mat4 lightView = glm::lookAt(center - sun.dir*5.f, center, up);
+        dirLightSpaceMat = lightProjection * lightView;
+    }
+
 
     void init()
     {
@@ -1136,25 +1175,26 @@ namespace Game
 
         skyboxIndex = skyboxMountLake.glIndx;
 
-        sun.color = glm::vec3(glm::vec2(0.3), 0);
+        sun.color = glm::vec3(glm::vec2(0.5), 0.4);
         sun.dir = {0, -1.0f, -1.0f};
 
+        initDirLightShadow();
 
         PointLight light;
-        light.pos = {5, -5, 2};
-        light.color = glm::vec3(1.0, 0.2, 0.5);
+        light.pos = {5, -5, -0.5};
+        light.color = glm::vec3(1.0, 0.2, 0.5); light.color *= 0.8;
         light.constant = 1.f;
-        light.linear = 0.05f;
-        light.quadratic = 0.004f;
+        light.linear = 0.5f;
+        light.quadratic = 0.8f;
 
         PointLight light2;
         light2.pos = {-5, -10, 3};
-        light2.color = glm::vec3(0.3, 0.4, 0.9);
+        light2.color = glm::vec3(0.3, 0.4, 0.9); light2.color *= 0.2;
         light2.constant = 1.f;
         light2.linear = 0.07f;
-        light2.quadratic = 0.004f;
+        light2.quadratic = 0.04f;
 
-        pointLights.emplace_back(light); pointLights.emplace_back(light2);
+        //pointLights.emplace_back(light); pointLights.emplace_back(light2);
     }
 
     void update(const GLdouble deltaTime)
@@ -1260,6 +1300,44 @@ namespace Game
         glm::mat4 projectionMatrix = cam.getProjectionMatrix();
         glm::mat4 viewMatrix = cam.getViewMatrix();
 
+        //Shadows
+        glViewport(0, 0, 1024, 1024);
+        glBindFramebuffer(GL_FRAMEBUFFER, dirLightShadowFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+
+        Shader& dirLightShadow = Storage::getShader("src/shaders/dirLightShadow");
+        dirLightShadow.use();
+
+        dirLightShadow.setMat4("lightTrans", dirLightSpaceMat);
+        dirLightShadow.set1Int("diffTex", 0);
+
+        Mesh& planeMesh = Storage::getMesh("mesh/spacePlane.obj");
+        Mesh& stonePlace = Storage::getMesh("mesh/stonePlace.obj");
+        Mesh& grass = Storage::getMesh("mesh/grass.obj");
+        Mesh& particle = Storage::getMesh("mesh/particle.obj");
+
+        glm::mat4 planeModel = glm::translate(glm::rotate(glm::mat4(1), glm::radians(90.f), glm::vec3(0, 0, 1)), glm::vec3(-3, 0, 0));
+        auto grassPoss = {glm::vec3(-3, -8, -1), glm::vec3(-2, -7, -1), glm::vec3(-3, -6.3, -1)};
+
+
+        setupMeshForDraw(planeMesh);
+        drawMesh(planeMesh, planeModel, dirLightShadow);
+
+        setupMeshForDraw(stonePlace);
+        glm::mat4 stonePlaceModel = glm::translate(glm::mat4(1), glm::vec3(0, -12, 0));
+        drawMesh(stonePlace, stonePlaceModel, dirLightShadow);
+
+        setupMeshForDraw(grass);
+        glDisable(GL_CULL_FACE);
+        for(glm::vec3 pos : grassPoss)
+            drawMesh(grass, glm::translate(glm::mat4(1), pos), dirLightShadow);
+        glEnable(GL_CULL_FACE);
+
+
+
+        //The render
+        glViewport(0, 0, Window::width, Window::height);
         glBindFramebuffer(GL_FRAMEBUFFER, multiSampleFramebuff);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
@@ -1267,7 +1345,6 @@ namespace Game
         glClearColor(1, 1, 1, 1);
 
         drawSkybox(viewMatrix, projectionMatrix);
-
 
         Shader& lightUseShader = Storage::getShader("src/shaders/lightUse");
 
@@ -1280,35 +1357,36 @@ namespace Game
 
         lightUseShader.setMat4("view", viewMatrix);
         lightUseShader.setMat4("projection", projectionMatrix);
+        lightUseShader.setMat4("dirLightSpace", dirLightSpaceMat);
 
-        lightUseShader.setVec3("ambientLight", glm::vec3(0.3));
+
+        lightUseShader.setVec3("ambientLight", glm::vec3(0.05));
         lightUseShader.setVec3("viewPos", cam.pos);
 
         lightUseShader.set1Int("diffTexture", 0);
         lightUseShader.set1Int("specTexture", 1);
+        lightUseShader.set1Int("dirLightShadow", 2);
+
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
 
 
-        Mesh& planeMesh = Storage::getMesh("mesh/spacePlane.obj");
         setupMeshForDraw(planeMesh);
-        drawMesh(planeMesh, glm::rotate(glm::mat4(1), glm::radians(90.f), glm::vec3(0, 0, 1)), lightUseShader);
+        drawMesh(planeMesh, planeModel, lightUseShader);
 
-        Mesh& stonePlace = Storage::getMesh("mesh/stonePlace.obj");
+
         setupMeshForDraw(stonePlace);
-        glm::mat4 stonePlaceModel = glm::translate(glm::mat4(1), glm::vec3(0, -12, 0));
         drawMesh(stonePlace, stonePlaceModel, lightUseShader);
 
-        Mesh& grass = Storage::getMesh("mesh/grass.obj");
         setupMeshForDraw(grass);
         glDisable(GL_CULL_FACE);
-        for(glm::vec3 pos : {glm::vec3(-3, -8, -1), glm::vec3(-2, -7, -1), glm::vec3(-4, -6.3, -1)})
+        for(glm::vec3 pos : grassPoss)
             drawMesh(grass, glm::translate(glm::mat4(1), pos), lightUseShader);
         glEnable(GL_CULL_FACE);
 
 
 
         Shader& instanceShader = Storage::getShader("src/shaders/instance");
-
-        Mesh& particle = Storage::getMesh("mesh/particle.obj");
 
         instanceShader.use();
         instanceShader.setMat4("view", viewMatrix);
@@ -1319,10 +1397,11 @@ namespace Game
         glDrawArraysInstanced(GL_TRIANGLES, 0, particle.vertsNum, 5);
 
 
-
-
         drawLights(pointLights, projectionMatrix, viewMatrix);
 
+
+
+        //Post processing
         Shader& postProcess = Storage::getShader("src/shaders/postProcessTest");
 
 
@@ -1364,7 +1443,7 @@ int main()
     }
 
 
-    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance"};
+    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {

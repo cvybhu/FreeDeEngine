@@ -27,6 +27,7 @@ out vec4 FragColor;
 uniform sampler2D diffTexture;
 uniform sampler2D specTexture;
 
+
 uniform vec3 ambientLight;
 uniform vec3 viewPos;
 
@@ -35,10 +36,14 @@ uniform int pointLightsNum;
 
 uniform DirLight dirLight;
 
+uniform sampler2D dirLightShadow;
+
+in vec4 fragPosDirLightSpace;
 
 
-float shininess = 16.0f;
-float specularity = 0.5f;
+
+float shininess = 32.0f;
+float specularity = 0.2f;
 
 vec3 calculatePointLight(PointLight light)
 {
@@ -97,6 +102,39 @@ vec3 calcPointLights()
 }
 
 
+float dirLightShadowFact()
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosDirLightSpace.xyz / fragPosDirLightSpace.w;
+
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(dirLightShadow, projCoords.xy).r;
+
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+
+    // check whether current frag pos is in shadow
+    float bias = 0.002;
+
+    //return (currentDepth - bias > texture(dirLightShadow, projCoords.xy).r) ? 1 : 0;
+
+
+    vec2 texelSize = 1.0 / textureSize(dirLightShadow, 0);
+    float res = 0;
+    for(int x = -1; x <= 1; x++)
+    for(int y = -1; y <= 1; y++)
+        if(currentDepth - bias > texture(dirLightShadow, projCoords.xy + vec2(x*texelSize.x, y*texelSize.y)).r)
+            res += 1;
+
+    res /= 9;
+
+    return res;
+
+}
+
 
 void main()
 {
@@ -106,7 +144,8 @@ void main()
     vec3 result = ambientLight * texture(diffTexture, texCoords).rgb;
 
     result += calcPointLights();
-    result += calculateDirLight(dirLight);
+
+    result += (1.0 - dirLightShadowFact()) * calculateDirLight(dirLight);;
 
     FragColor = vec4(result, 1);
 }

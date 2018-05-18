@@ -36,7 +36,6 @@ float blurKernel[9] = float[](
 
 void main()
 {
-
     vec3 effectColor = vec3(0.00);
 
     for(int i = 0; i < 9; i++)
