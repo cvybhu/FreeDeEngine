@@ -106,7 +106,7 @@ struct Texture //holds pixel data. possible to load from file and on GPU
     bool isOnRAM, isOnGPU;
 
     void loadToRAM(const char* filePath);
-    void loadToGPU();
+    void loadToGPU(bool fixGamma = false);
 
     void unloadFromRAM();
     void unloadFromGPU();
@@ -131,7 +131,7 @@ struct CubeTexture
     bool isOnRAM, isOnGPU;
 
     void loadToRAM(const char* fileName);    //its expected that cubemap is like "fileName_up.jpg", _down, _front _back _right _left
-    void loadToGPU();                       //also all of the files should have same resolution
+    void loadToGPU(bool fixGamma = false);                       //also all of the files should have same resolution
 
     void unloadFromRAM();
     void unloadFromGPU();
@@ -468,7 +468,7 @@ void Texture::loadToRAM(const char* filePath)
 
 
 
-void Texture::loadToGPU()
+void Texture::loadToGPU(bool fixGamma)
 {
     glGenTextures(1, &glIndx);
     glBindTexture(GL_TEXTURE_2D, glIndx);
@@ -479,9 +479,19 @@ void Texture::loadToGPU()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     if(nrChannels == 3)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    {
+        if(fixGamma)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        else
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    }
     else
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    {
+        if(fixGamma)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        else
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    }
 
     glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -527,13 +537,16 @@ void CubeTexture::loadToRAM(const char* fileName)
     isOnRAM = true;
 }
 
-void CubeTexture::loadToGPU()
+void CubeTexture::loadToGPU(bool fixGamma)
 {
     glGenTextures(1, &glIndx);
     glBindTexture(GL_TEXTURE_CUBE_MAP, glIndx);
 
     for(int i = 0; i < 6; i++)
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data[i]);
+        if(fixGamma)
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_SRGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data[i]);
+        else
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data[i]);
 
 
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -795,7 +808,7 @@ void Mesh::loadToGPU()
     glBindVertexArray(0);
 
     if(!diffTexture->isOnGPU)
-        diffTexture->loadToGPU();
+        diffTexture->loadToGPU(true);
 
     if(!specTexture->isOnGPU)
         specTexture->loadToGPU();
@@ -1101,7 +1114,7 @@ namespace Game
         CubeTexture& skyboxMountLake = Storage::getCubeTex("src/tex/mountainsCube");
 
         skyboxMountLake.loadToRAM("tex/mountainsCube");
-        skyboxMountLake.loadToGPU();
+        skyboxMountLake.loadToGPU(true);
 
         skyboxIndex = skyboxMountLake.glIndx;
 

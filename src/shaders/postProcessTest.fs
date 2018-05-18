@@ -51,4 +51,8 @@ void main()
         FragColor += texelFetch(screenTexture, ivec2(texCoords.x*texSize.x, texCoords.y*texSize.y), i);
 
     FragColor /= 4.0;
+
+    float gamma = 2.2;
+
+    FragColor.xyz = pow(FragColor.xyz, vec3(1.0/gamma));
 }
