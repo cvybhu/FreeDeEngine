@@ -3,7 +3,7 @@ out vec4 FragColor;
 
 in vec2 texCoords;
 
-uniform sampler2DMS screenTexture;
+uniform sampler2D screenTex;
 
 
 float offset = 1.0 / 700.0;
@@ -36,23 +36,18 @@ float blurKernel[9] = float[](
 
 void main()
 {
-    /*
-    vec3 res = vec3(0.00);
+
+    vec3 effectColor = vec3(0.00);
 
     for(int i = 0; i < 9; i++)
-        res += blurKernel[i]/3.0*vec3(texture(screenTexture, texCoords.st + moves[i]));
+        effectColor += edgeDetectKernel[i]/3.0*vec3(texture(screenTex, texCoords.st + moves[i]));
 
-    FragColor = vec4(res, 1);
-    */
+    //effectColor = vec3(0, 0, 1);
 
-    vec2 texSize = textureSize(screenTexture);
+    float mixFactor = min(max(1.1-length(texCoords - vec2(0.5))*0.2, 0), 1);
+    FragColor.xyz = mix(effectColor*50, texture(screenTex, texCoords).rgb, mixFactor);
 
-    for(int i = 0; i < 4; i++)
-        FragColor += texelFetch(screenTexture, ivec2(texCoords.x*texSize.x, texCoords.y*texSize.y), i);
-
-    FragColor /= 4.0;
 
     float gamma = 2.2;
-
     FragColor.xyz = pow(FragColor.xyz, vec3(1.0/gamma));
 }

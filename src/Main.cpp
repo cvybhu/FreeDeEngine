@@ -956,9 +956,14 @@ namespace Game
     FreeCam cam;
 
 
-    GLuint framebuffer;
-    GLuint texColorBuffer;
-    GLuint depthStencRenderBuff;
+    GLuint postProcFramebuff;   //not multisampled buff for postprocessing
+    GLuint postProcFramebuffColorTex;
+
+    const GLuint MSAASamples = 4;
+    GLuint multiSampleFramebuff; //main render buff
+    GLuint multiSampleColorTex;
+    GLuint depthStencMultisampleRenderbuff;
+
     GLuint screenQuadVAO, screenQuadVBO;
 
     GLuint skyboxIndex;
@@ -968,30 +973,43 @@ namespace Game
     void initFramebuffer()
     {
         glEnable(GL_MULTISAMPLE);
+        glGenFramebuffers(1, &multiSampleFramebuff);
+        glBindFramebuffer(GL_FRAMEBUFFER, multiSampleFramebuff);
 
-        glGenFramebuffers(1, &framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-        glGenTextures(1, &texColorBuffer);
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texColorBuffer);
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, Window::width, Window::height, GL_TRUE);
+        glGenTextures(1, &multiSampleColorTex);
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, multiSampleColorTex);
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAASamples, GL_RGB, Window::width, Window::height, GL_TRUE);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         //glBindTexture(GL_TEXTURE_2D, 0); //is this really necessary?
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texColorBuffer, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, multiSampleColorTex, 0);
 
-        glGenRenderbuffers(1, &depthStencRenderBuff);
-        glBindRenderbuffer(GL_RENDERBUFFER, depthStencRenderBuff);
-        glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, Window::width, Window::height);
+        glGenRenderbuffers(1, &depthStencMultisampleRenderbuff);
+        glBindRenderbuffer(GL_RENDERBUFFER, depthStencMultisampleRenderbuff);
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, MSAASamples, GL_DEPTH24_STENCIL8, Window::width, Window::height);
         //glBindRenderbuffer(GL_RENDERBUFFER, 0); //is this really necessary?
 
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencRenderBuff);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencMultisampleRenderbuff);
 
         if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            std::cout << "Failed to setup framebuffer!!!\n";
+            std::cout << "Failed to setup multisampled framebuffer!!!\n";
+
+
+        glGenFramebuffers(1, &postProcFramebuff);
+        glBindFramebuffer(GL_FRAMEBUFFER, postProcFramebuff);
+
+        glGenTextures(1, &postProcFramebuffColorTex);
+        glBindTexture(GL_TEXTURE_2D, postProcFramebuffColorTex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Window::width, Window::height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postProcFramebuffColorTex, 0);
 
         //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -1242,7 +1260,7 @@ namespace Game
         glm::mat4 projectionMatrix = cam.getProjectionMatrix();
         glm::mat4 viewMatrix = cam.getViewMatrix();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, multiSampleFramebuff);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -1288,8 +1306,6 @@ namespace Game
 
 
 
-
-
         Shader& instanceShader = Storage::getShader("src/shaders/instance");
 
         Mesh& particle = Storage::getMesh("mesh/particle.obj");
@@ -1309,6 +1325,12 @@ namespace Game
 
         Shader& postProcess = Storage::getShader("src/shaders/postProcessTest");
 
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, multiSampleFramebuff);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postProcFramebuff);
+        glBlitFramebuffer(0, 0, Window::width, Window::height, 0, 0, Window::width, Window::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1316,7 +1338,7 @@ namespace Game
         glBindVertexArray(screenQuadVAO);
         glDisable(GL_DEPTH_TEST);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texColorBuffer);
+        glBindTexture(GL_TEXTURE_2D, postProcFramebuffColorTex);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 }
