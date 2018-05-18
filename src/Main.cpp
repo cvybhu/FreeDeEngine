@@ -214,7 +214,7 @@ namespace Storage  //all Meshes are held in global Storage and can be accesed vi
 
 struct FreeCam
 {
-    FreeCam(glm::vec3 position = {0, 0, 0}, glm::vec2 rotation = {0, 0}, float speed = 10);
+    FreeCam(glm::vec3 position = {0, 0, 0}, glm::vec2 rotation = {0, 0}, float speed = 15);
 
     glm::vec3 pos;
     glm::vec2 rot;  //yaw pitch (in radians)
@@ -223,18 +223,35 @@ struct FreeCam
 
     float sensitivity;
     float speed;
+    float fastSpeed;
 
 
     void handleCameraRot(glm::vec2 mouseDelta);
     void handleMovement(float deltaTime);
 
-    void moveForward(float deltaTime);
-    void moveBack(float deltaTime);
-    void moveRight(float deltaTime);
-    void moveLeft(float deltaTime);
-    void moveUp(float deltaTime);
-    void moveDown(float deltaTime);
+//openGL stuff
+    glm::mat4 getViewMatrix();
+    glm::mat4 getProjectionMatrix();
+};
 
+struct SmoothFreeCam    //this doesnt really work kek
+{
+    SmoothFreeCam(glm::vec3 position = {0, 0, 0}, glm::vec2 rotation = {0, 0}, float speed = 15);
+
+    glm::vec3 pos;
+    glm::vec2 rot;  //yaw pitch (in radians)
+
+    float fov;  //in degrees
+
+    float sensitivity;
+    float speed;
+    float fastSpeed;
+
+    glm::vec2 rotMomentum;
+
+
+    void handleCameraRot(glm::vec2 mouseDelta, float deltaTime);
+    void handleMovement(float deltaTime);
 
 //openGL stuff
     glm::mat4 getViewMatrix();
@@ -420,9 +437,6 @@ namespace Window
             glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
         #endif
 
-        width = 1600;
-        height = 900;
-
         window = glfwCreateWindow(width, height, "xertz engine", NULL, NULL);
         glfwGetWindowSize(window, &width, &height);
 
@@ -445,7 +459,6 @@ namespace Window
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_STENCIL_TEST);
-
 
         glfwSetCursorPos(window, mousePos.x, mousePos.y);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -834,40 +847,9 @@ FreeCam::FreeCam(glm::vec3 position, glm::vec2 rotation, float Speed)
     pos = position;
     rot = rotation;
     speed = Speed;
+    fastSpeed = speed*5;
     fov = 45.0f;
     sensitivity = 0.003;
-}
-
-
-void FreeCam::moveForward(float deltaTime)
-{
-    pos += speed*deltaTime*glm::rotate(glm::vec3(0, -1, 0), rot[0], glm::vec3(0, 0, 1));
-}
-
-void FreeCam::moveBack(float deltaTime)
-{
-    moveForward(-deltaTime);
-}
-
-
-void FreeCam::moveRight(float deltaTime)
-{
-    pos += speed*deltaTime*glm::rotate(glm::vec3(-1, 0, 0), rot[0], glm::vec3(0, 0, 1));
-}
-
-void FreeCam::moveLeft(float deltaTime)
-{
-    moveRight(-deltaTime);
-}
-
-void FreeCam::moveUp(float deltaTime)
-{
-    pos.z += speed*deltaTime;
-}
-
-void FreeCam::moveDown(float deltaTime)
-{
-    moveUp(-deltaTime);
 }
 
 
@@ -885,12 +867,27 @@ void FreeCam::handleCameraRot(glm::vec2 mouseDelta)
 
 void FreeCam::handleMovement(float deltaTime)
 {
-    if(Window::isPressed(GLFW_KEY_W))moveForward(deltaTime);
-    if(Window::isPressed(GLFW_KEY_S))moveBack(deltaTime);
-    if(Window::isPressed(GLFW_KEY_A))moveLeft(deltaTime);
-    if(Window::isPressed(GLFW_KEY_D))moveRight(deltaTime);
-    if(Window::isPressed(GLFW_KEY_SPACE))moveUp(deltaTime);
-    if(Window::isPressed(GLFW_KEY_LEFT_SHIFT))moveDown(deltaTime);
+    glm::vec3 forward = glm::rotate(glm::vec3(0, -1, 0), rot[0], glm::vec3(0, 0, 1));
+    glm::vec3 right = glm::rotate(glm::vec3(-1, 0, 0), rot[0], glm::vec3(0, 0, 1));
+    glm::vec3 up = glm::vec3(0, 0, 1);
+
+    glm::vec3 curMove = {0, 0, 0};
+
+    if(Window::isPressed(GLFW_KEY_W))curMove += forward;
+    if(Window::isPressed(GLFW_KEY_S))curMove -= forward;
+    if(Window::isPressed(GLFW_KEY_A))curMove -= right;
+    if(Window::isPressed(GLFW_KEY_D))curMove += right;
+    if(Window::isPressed(GLFW_KEY_SPACE))curMove += up;
+    if(Window::isPressed(GLFW_KEY_LEFT_SHIFT))curMove -= up;
+
+    float curSpeed = (Window::isPressed(GLFW_KEY_LEFT_CONTROL) ? fastSpeed : speed);
+
+    if(curMove != glm::vec3(0, 0, 0))
+    {
+        curMove = glm::normalize(curMove);
+        curMove *= deltaTime * curSpeed;
+        pos += curMove;
+    }
 
     handleCameraRot(Window::mouseDelta);
 }
@@ -913,6 +910,100 @@ glm::mat4 FreeCam::getViewMatrix()
 
 
 glm::mat4 FreeCam::getProjectionMatrix()
+{
+    return glm::perspective(glm::radians(fov), (float)Window::width / (float)Window::height, 0.1f, 500.0f);
+}
+
+
+
+SmoothFreeCam::SmoothFreeCam(glm::vec3 position, glm::vec2 rotation, float Speed)
+{
+    pos = position;
+    rot = rotation;
+    speed = Speed;
+    fastSpeed = speed*5;
+    fov = 45.0f;
+    sensitivity = 0.003;
+}
+
+
+void SmoothFreeCam::handleCameraRot(glm::vec2 mouseDelta, float deltaTime)
+{
+    float slowDown = 20.0*deltaTime;
+
+    if(mouseDelta.x != 0)
+        rotMomentum.x = mouseDelta.x;
+    else
+    {
+        rotMomentum.x = pow(rotMomentum.x, 0.5*deltaTime);
+    }
+
+    if(mouseDelta.y > 0)
+        rotMomentum.y = mouseDelta.y;
+    else
+        rotMomentum.y -= slowDown*deltaTime;
+
+    rotMomentum.y = 0;
+
+    //if(rotMomentum.x < 0)
+
+    rot.x -= rotMomentum.x*sensitivity;
+    rot.y += rotMomentum.y*sensitivity;
+
+    float almost90 = glm::radians(89.5);
+    if(rot.y < -almost90)rot.y = -almost90;
+    if(rot.y > almost90)rot.y = almost90;
+
+
+}
+
+
+
+void SmoothFreeCam::handleMovement(float deltaTime)
+{
+    glm::vec3 forward = glm::rotate(glm::vec3(0, -1, 0), rot[0], glm::vec3(0, 0, 1));
+    glm::vec3 right = glm::rotate(glm::vec3(-1, 0, 0), rot[0], glm::vec3(0, 0, 1));
+    glm::vec3 up = glm::vec3(0, 0, 1);
+
+    glm::vec3 curMove = {0, 0, 0};
+
+    if(Window::isPressed(GLFW_KEY_W))curMove += forward;
+    if(Window::isPressed(GLFW_KEY_S))curMove -= forward;
+    if(Window::isPressed(GLFW_KEY_A))curMove -= right;
+    if(Window::isPressed(GLFW_KEY_D))curMove += right;
+    if(Window::isPressed(GLFW_KEY_SPACE))curMove += up;
+    if(Window::isPressed(GLFW_KEY_LEFT_SHIFT))curMove -= up;
+
+    float curSpeed = (Window::isPressed(GLFW_KEY_LEFT_CONTROL) ? fastSpeed : speed);
+
+    if(curMove != glm::vec3(0, 0, 0))
+    {
+        curMove = glm::normalize(curMove);
+        curMove *= deltaTime * curSpeed;
+        pos += curMove;
+    }
+
+    handleCameraRot(Window::mouseDelta, deltaTime);
+}
+
+
+glm::mat4 SmoothFreeCam::getViewMatrix()
+{
+    glm::vec3 up(0, 0, 1);
+    glm::vec3 front(0, -1, 0);
+    glm::vec3 right = glm::cross(up, front);
+
+    front = glm::rotate(front, rot[0], up); //yaw
+    right = glm::rotate(right, rot[0], up);
+
+    front = glm::rotate(front, rot[1], right); //pitch
+    up = glm::rotate(up, rot[1], right);
+
+    return glm::lookAt(pos, pos + front, up);
+}
+
+
+glm::mat4 SmoothFreeCam::getProjectionMatrix()
 {
     return glm::perspective(glm::radians(fov), (float)Window::width / (float)Window::height, 0.1f, 500.0f);
 }
@@ -1317,7 +1408,7 @@ namespace Game
         Mesh& grass = Storage::getMesh("mesh/grass.obj");
         Mesh& particle = Storage::getMesh("mesh/particle.obj");
 
-        glm::mat4 planeModel = glm::translate(glm::rotate(glm::mat4(1), glm::radians(90.f), glm::vec3(0, 0, 1)), glm::vec3(-3, 0, 0));
+        glm::mat4 planeModel = glm::rotate(glm::translate(glm::mat4(1), glm::vec3(4, -4, 2)), (float)glfwGetTime(), glm::vec3(0, 0, 1));
         auto grassPoss = {glm::vec3(-3, -8, -1), glm::vec3(-2, -7, -1), glm::vec3(-3, -6.3, -1)};
 
 
@@ -1331,7 +1422,7 @@ namespace Game
         setupMeshForDraw(grass);
         glDisable(GL_CULL_FACE);
         for(glm::vec3 pos : grassPoss)
-            drawMesh(grass, glm::translate(glm::mat4(1), pos), dirLightShadow);
+            drawMesh(grass, glm::rotate(glm::translate(glm::mat4(1), pos), glm::radians(180.f), glm::vec3(0, 0, 1)), dirLightShadow);
         glEnable(GL_CULL_FACE);
 
 
@@ -1370,10 +1461,8 @@ namespace Game
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
 
-
         setupMeshForDraw(planeMesh);
         drawMesh(planeMesh, planeModel, lightUseShader);
-
 
         setupMeshForDraw(stonePlace);
         drawMesh(stonePlace, stonePlaceModel, lightUseShader);
@@ -1381,7 +1470,7 @@ namespace Game
         setupMeshForDraw(grass);
         glDisable(GL_CULL_FACE);
         for(glm::vec3 pos : grassPoss)
-            drawMesh(grass, glm::translate(glm::mat4(1), pos), lightUseShader);
+            drawMesh(grass, glm::rotate(glm::translate(glm::mat4(1), pos), glm::radians(180.f), glm::vec3(0, 0, 1)), lightUseShader);
         glEnable(GL_CULL_FACE);
 
 
