@@ -41,6 +41,10 @@ uniform sampler2D dirLightShadow;
 in vec4 fragPosDirLightSpace;
 
 
+uniform PointLight shadowPointLight;
+uniform samplerCube shadowPointDepth;
+uniform float shadowPLFarPlane;
+
 
 float shininess = 32.0f;
 float specularity = 0.2f;
@@ -63,7 +67,6 @@ vec3 calculatePointLight(PointLight light)
     // attenuation
     float distance    = length(light.pos - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-	attenuation = 1.0;
 
     return (diffuse + specular)*attenuation;
 }
@@ -135,6 +138,45 @@ float dirLightShadowFact()
 
 }
 
+float PointShadowCalculation()
+{
+    // get vector between fragment position and light position
+    vec3 fragToLight = fragPos - shadowPointLight.pos;
+    // use the light to fragment vector to sample from the depth map
+    float closestDepth = texture(shadowPointDepth, fragToLight).r;
+    // it is currently in linear range between [0,1]. Re-transform back to original value
+    closestDepth *= shadowPLFarPlane;
+    // now get current linear depth as the length between the fragment and light position
+    float currentDepth = length(fragToLight);
+    // now test for shadows
+    float bias = 0.03;
+    //float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+
+    vec3 sampleOffsetDirections[20] = vec3[]
+    (
+        vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1),
+        vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+        vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+        vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+        vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+    );
+
+    float shadow = 0.0;
+    int samples  = 20;
+    float viewDistance = length(viewPos - fragPos);
+    float diskRadius = 0.05;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(shadowPointDepth, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+        closestDepth *= shadowPLFarPlane;   // Undo mapping [0;1]
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);
+
+    return shadow;
+}
+
 
 void main()
 {
@@ -143,7 +185,9 @@ void main()
 
     vec3 result = ambientLight * texture(diffTexture, texCoords).rgb;
 
-    result += calcPointLights();
+    //result += calcPointLights();
+
+    result += (1.0 - PointShadowCalculation()) * calculatePointLight(shadowPointLight);
 
     result += (1.0 - dirLightShadowFact()) * calculateDirLight(dirLight);;
 

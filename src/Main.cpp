@@ -476,6 +476,7 @@ void Texture::loadToRAM(const char* filePath)
     if (!data)
     {
         std::cout << "[ERROR TEX] Failed to load texture " << filePath << "\n";
+        return;
     }
 
     isOnRAM = true;
@@ -1064,10 +1065,18 @@ namespace Game
     GLuint skyboxIndex;
     GLuint skyboxVAO, skyboxVBO;
 
+
+    glm::ivec2 shadowRes = glm::ivec2(1024);
+
     GLuint dirLightShadowFBO;
     GLuint dirLightShadowDepth;
     glm::mat4 dirLightSpaceMat;
 
+    PointLight shadowPointLight;
+    GLuint shadowPLFBO;  //PL == point light
+    GLuint shadowPLCubeMap;
+    std::vector<glm::mat4> shadowPLTransforms;
+    float shadowPLFarPlane;
 
     void initFramebuffer()
     {
@@ -1221,7 +1230,7 @@ namespace Game
         glVertexAttribDivisor(6, 1);
     }
 
-    void initDirLightShadow(glm::ivec2 shadowRes = glm::ivec2(1024))
+    void initDirLightShadow()
     {
         glGenFramebuffers(1, &dirLightShadowFBO);
         glBindFramebuffer(GL_FRAMEBUFFER, dirLightShadowFBO);
@@ -1239,17 +1248,64 @@ namespace Game
         glDrawBuffer(GL_NONE);
         glReadBuffer(GL_NONE);
 
-        float near_plane = 1.0f, far_plane = 20.5f;
-        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+        float near_plane = 1.0f, far_plane = 100.5f;
+        float viewSize = 25.f;
+        glm::mat4 lightProjection = glm::ortho(-viewSize, viewSize, -viewSize, viewSize, near_plane, far_plane);
 
-        glm::vec3 center = glm::vec3(0);
+        glm::vec3 center = glm::vec3(5, 0, 0);
         glm::vec3 lightDir = glm::vec3(0, -1, -1);
         glm::vec3 side = glm::cross(sun.dir, glm::vec3(0, 0, 1));
         glm::vec3 up = glm::cross(side, sun.dir);
         if(up.z < 0)up = -up;
 
-        glm::mat4 lightView = glm::lookAt(center - sun.dir*5.f, center, up);
+        glm::mat4 lightView = glm::lookAt(center - sun.dir*far_plane/2.f, center, up);
         dirLightSpaceMat = lightProjection * lightView;
+    }
+
+    void initShadowPointLight()
+    {
+        shadowPointLight.pos = glm::vec3(20.5, -1, -1);
+        shadowPointLight.color = glm::vec3(0.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
+        shadowPointLight.constant = 1.f;
+        shadowPointLight.linear = 0.1f;
+        shadowPointLight.quadratic = 0.03f;
+
+        glGenFramebuffers(1, &shadowPLFBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowPLFBO);
+
+
+        glGenTextures(1, &shadowPLCubeMap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, shadowPLCubeMap);
+
+        for(int i = 0; i < 6; i++)
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, shadowRes.x, shadowRes.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowPLCubeMap, 0);
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+
+
+        float aspect = (float)shadowRes.x/(float)shadowRes.y;
+        float near = 0.1f;
+        shadowPLFarPlane = 25.f;
+        glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, shadowPLFarPlane);
+
+        auto lightPos = shadowPointLight.pos;
+
+        shadowPLTransforms = {
+            shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 1.0, 0.0, 0.0), glm::vec3(0.0,-1.0, 0.0)),
+            shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0,-1.0, 0.0)),
+            shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)),
+            shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 0.0,-1.0, 0.0), glm::vec3(0.0, 0.0,-1.0)),
+            shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 0.0, 0.0, 1.0), glm::vec3(0.0,-1.0, 0.0)),
+            shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3( 0.0, 0.0,-1.0), glm::vec3(0.0,-1.0, 0.0))
+        };
     }
 
 
@@ -1270,6 +1326,7 @@ namespace Game
         sun.dir = {0, -1.0f, -1.0f};
 
         initDirLightShadow();
+        initShadowPointLight();
 
         PointLight light;
         light.pos = {5, -5, -0.5};
@@ -1301,6 +1358,12 @@ namespace Game
     void loadPointLightsToShader(std::vector<PointLight>& lights, Shader& shader)
     {
         shader.set1Int("pointLightsNum", (int)lights.size());
+
+        shader.setVec3("shadowPointLight.pos", shadowPointLight.pos);
+        shader.setVec3("shadowPointLight.color", shadowPointLight.color);
+        shader.set1Float("shadowPointLight.constant", shadowPointLight.constant);
+        shader.set1Float("shadowPointLight.linear", shadowPointLight.linear);
+        shader.set1Float("shadowPointLight.quadratic", shadowPointLight.quadratic);
 
         for(unsigned i = 0; i < lights.size(); i++)
         {
@@ -1364,6 +1427,7 @@ namespace Game
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxIndex);
+        //glBindTexture(GL_TEXTURE_CUBE_MAP, shadowPLCubeMap);
 
         glBindVertexArray(skyboxVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -1391,8 +1455,8 @@ namespace Game
         glm::mat4 projectionMatrix = cam.getProjectionMatrix();
         glm::mat4 viewMatrix = cam.getViewMatrix();
 
-        //Shadows
-        glViewport(0, 0, 1024, 1024);
+        //Dir Light Shadows
+        glViewport(0, 0, shadowRes.x, shadowRes.y);
         glBindFramebuffer(GL_FRAMEBUFFER, dirLightShadowFBO);
         glClear(GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
@@ -1407,10 +1471,11 @@ namespace Game
         Mesh& stonePlace = Storage::getMesh("mesh/stonePlace.obj");
         Mesh& grass = Storage::getMesh("mesh/grass.obj");
         Mesh& particle = Storage::getMesh("mesh/particle.obj");
+        Mesh& pointShadowTest = Storage::getMesh("mesh/pointShadowTest.obj");
 
         glm::mat4 planeModel = glm::rotate(glm::translate(glm::mat4(1), glm::vec3(4, -4, 2)), (float)glfwGetTime(), glm::vec3(0, 0, 1));
         auto grassPoss = {glm::vec3(-3, -8, -1), glm::vec3(-2, -7, -1), glm::vec3(-3, -6.3, -1)};
-
+        glm::mat4 pointShadowTestModel = glm::translate(glm::mat4(1), glm::vec3(20, 0, 0));
 
         setupMeshForDraw(planeMesh);
         drawMesh(planeMesh, planeModel, dirLightShadow);
@@ -1425,6 +1490,33 @@ namespace Game
             drawMesh(grass, glm::rotate(glm::translate(glm::mat4(1), pos), glm::radians(180.f), glm::vec3(0, 0, 1)), dirLightShadow);
         glEnable(GL_CULL_FACE);
 
+        glDisable(GL_CULL_FACE);
+        setupMeshForDraw(pointShadowTest);
+        drawMesh(pointShadowTest, pointShadowTestModel, dirLightShadow);
+        glEnable(GL_CULL_FACE);
+
+
+        //Point light Shadows
+        glViewport(0, 0, shadowRes.x, shadowRes.y);
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowPLFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+
+        Shader& pointLightShadow = Storage::getShader("src/shaders/pointLightShadow");
+        pointLightShadow.use();
+
+        for(int i = 0; i < 6; i++)
+            pointLightShadow.setMat4(("shadowMats[" + convert2String(i) + "]").c_str(), shadowPLTransforms[i]);
+        pointLightShadow.setVec3("lightPos", shadowPointLight.pos);
+        pointLightShadow.set1Float("farPlane", shadowPLFarPlane);
+
+        setupMeshForDraw(pointShadowTest);
+        drawMesh(pointShadowTest, pointShadowTestModel, pointLightShadow);
+
+        setupMeshForDraw(grass);
+        auto grassForShadowModel = glm::rotate(glm::translate(glm::mat4(1), glm::vec3(23, 0, -1)), glm::radians(270.f), glm::vec3(0, 0, 1));
+        drawMesh(grass, grassForShadowModel, pointLightShadow);
 
 
         //The render
@@ -1457,9 +1549,15 @@ namespace Game
         lightUseShader.set1Int("diffTexture", 0);
         lightUseShader.set1Int("specTexture", 1);
         lightUseShader.set1Int("dirLightShadow", 2);
+        lightUseShader.set1Int("shadowPointDepth", 3);
 
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
+
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, shadowPLCubeMap);
+
+        lightUseShader.set1Float("shadowPLFarPlane", shadowPLFarPlane);
 
         setupMeshForDraw(planeMesh);
         drawMesh(planeMesh, planeModel, lightUseShader);
@@ -1471,7 +1569,11 @@ namespace Game
         glDisable(GL_CULL_FACE);
         for(glm::vec3 pos : grassPoss)
             drawMesh(grass, glm::rotate(glm::translate(glm::mat4(1), pos), glm::radians(180.f), glm::vec3(0, 0, 1)), lightUseShader);
+        drawMesh(grass, grassForShadowModel, lightUseShader);
         glEnable(GL_CULL_FACE);
+
+        setupMeshForDraw(pointShadowTest);
+        drawMesh(pointShadowTest, pointShadowTestModel, lightUseShader);
 
 
 
@@ -1486,7 +1588,24 @@ namespace Game
         glDrawArraysInstanced(GL_TRIANGLES, 0, particle.vertsNum, 5);
 
 
-        drawLights(pointLights, projectionMatrix, viewMatrix);
+
+        Shader& oneColor = Storage::getShader("src/shaders/oneColor");
+
+        oneColor.use();
+
+        oneColor.setMat4("projection", projectionMatrix);
+        oneColor.setMat4("view", viewMatrix);
+
+        Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
+        glBindVertexArray(lightMesh.VAO);
+
+        oneColor.setVec3("color", shadowPointLight.color);
+        oneColor.setMat4("model", glm::translate(glm::mat4(1), shadowPointLight.pos));
+        glDrawArrays(GL_TRIANGLES, 0, lightMesh.vertsNum);
+
+
+
+        //drawLights(pointLights, projectionMatrix, viewMatrix);
 
 
 
@@ -1507,6 +1626,7 @@ namespace Game
         glDisable(GL_DEPTH_TEST);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, postProcFramebuffColorTex);
+        //glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 }
@@ -1522,7 +1642,7 @@ int main()
     Window::init();
 
 
-    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj", "mesh/particle.obj"};
+    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj", "mesh/particle.obj", "mesh/pointShadowTest.obj"};
 
     for(unsigned i = 0; i < sizeof(meshes2Load)/sizeof(const char*); i++)
     {
@@ -1532,7 +1652,7 @@ int main()
     }
 
 
-    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow"};
+    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {
