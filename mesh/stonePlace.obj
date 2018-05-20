@@ -1,6 +1,7 @@
 
 diffTex tex/ROCKY_GROUND_DIFF.png
 specTex tex/ROCKY_GROUND_SPEC.png
+normalTex tex/ROCKY_GROUND_NORM.png
 
 mtllib stonePlace.mtl
 o Cube_Cube.001

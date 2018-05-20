@@ -2,11 +2,19 @@
 layout (location = 0) in vec3 pos;
 layout (location = 1) in vec3 normalIn;
 layout (location = 2) in vec2 texCoordsIn;
+layout (location = 3) in vec3 tangent;
 
-out vec3 fragPos;
-out vec3 normal;
-out vec2 texCoords;
-out vec4 fragPosDirLightSpace;
+
+out VS_OUT
+{
+    vec3 fragPos;
+    vec2 texCoords;
+    vec4 fragPosDirLightSpace;
+    vec3 T;
+    vec3 N;
+    vec3 B;
+    mat3 TBN;
+} Out;
 
 
 uniform mat4 model;
@@ -16,16 +24,25 @@ uniform mat4 dirLightSpace;
 
 void main()
 {
-    fragPos = vec3(model * vec4(pos, 1.0));
-    normal =  mat3(transpose(inverse(model))) * normalIn;
-    texCoords = texCoordsIn;
+    mat3 normModel = mat3(transpose(inverse(model)));
 
-    fragPosDirLightSpace = dirLightSpace * vec4(fragPos, 1);
+    Out.fragPos = vec3(model * vec4(pos, 1.0));
+    //Out.normal = normModel * normalIn;
+    Out.texCoords = texCoordsIn;
+
+    Out.fragPosDirLightSpace = dirLightSpace * vec4(Out.fragPos, 1);
+
+    vec3 T = normalize(normModel * tangent);
+    vec3 N = normalize(normModel * normalIn);
+    vec3 B = cross(N, T);
+
+    mat3 TBN = mat3(T, B, N);
+
+    Out.T = T;
+    Out.N = N;
+    Out.B = B;
+    Out.TBN = TBN;
 
     gl_Position = projection * view * model * vec4(pos, 1.0);
-
-    //vec3 pos = (gl_Position / gl_Position.w).xyz;
-    //pos += normalIn;
-    //gl_Position = vec4(pos, 1);
 }
 

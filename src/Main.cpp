@@ -193,17 +193,22 @@ struct Mesh //holds vertex data and pointers to used textures from global storag
 
     Texture* diffTexture;
     Texture* specTexture;
+    Texture* normalTexture;
 
     struct Vertex
     {
         glm::vec3 pos;
         glm::vec3 normal;
         glm::vec2 texCoords;
+        glm::vec3 tangent;
     };
+
 
     std::vector<Vertex> verts;
     int vertsNum;
     GLuint VBO, VAO;
+
+    void calculateTangents();
 };
 
 namespace Storage  //all Meshes are held in global Storage and can be accesed via Storage::getMesh("<filePath>")
@@ -696,6 +701,30 @@ void Shader::load(const std::string& path)
 }
 
 
+void Mesh::calculateTangents()
+{
+    for(int i = 0; i < (int)verts.size(); i += 3)
+    {
+        Vertex* curVerts = &verts[i];
+
+        glm::vec3 edge1 = curVerts[1].pos - curVerts[0].pos;
+        glm::vec3 edge2 = curVerts[2].pos - curVerts[0].pos;
+
+        glm::vec2 deltaUV1 = curVerts[1].texCoords - curVerts[0].texCoords;
+        glm::vec2 deltaUV2 = curVerts[2].texCoords - curVerts[0].texCoords;
+
+        float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+        glm::vec3 tangent;
+        tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+        tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+        tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+        tangent = glm::normalize(tangent);
+
+        curVerts[0].tangent = curVerts[1].tangent = curVerts[2].tangent = tangent;
+    }
+}
+
 void Mesh::loadToRAM(const char* filePath)
 {
     std::ifstream file(filePath);
@@ -707,10 +736,11 @@ void Mesh::loadToRAM(const char* filePath)
     std::vector<glm::vec2> texCoords;
 
     specTexture = nullptr;
+    normalTexture = nullptr;
 
     while(file >> input)
     {
-        if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "diffTex" && input != "specTex")
+        if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "diffTex" && input != "specTex" && input != "normalTex")
             continue;
 
         if(input == "v")
@@ -782,12 +812,27 @@ void Mesh::loadToRAM(const char* filePath)
 
             continue;
         }
+
+        if(input == "normalTex")
+        {   
+            std::string texPath;
+            file >> texPath;
+
+            normalTexture = &Storage::getTex(texPath.c_str());
+
+            if(!normalTexture->isOnRAM)
+                normalTexture->loadToRAM(texPath.c_str());
+
+            continue;
+        }
     }
 
     if(specTexture == nullptr)
         specTexture = diffTexture;
 
     file.close();
+
+    calculateTangents();
 
     std::cout << "[MESHLOAD]Succesfully loaded " << filePath << " (" << verts.size() << " vertices)\n";
 
@@ -822,6 +867,9 @@ void Mesh::loadToGPU()
     // vertex texture coords
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
+    //tangent
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
 
     glBindVertexArray(0);
 
@@ -830,6 +878,9 @@ void Mesh::loadToGPU()
 
     if(!specTexture->isOnGPU)
         specTexture->loadToGPU();
+
+    if(normalTexture != nullptr && !normalTexture->isOnGPU)
+        normalTexture->loadToGPU();
 }
 
 void Mesh::unloadFromGPU()
@@ -1078,6 +1129,8 @@ namespace Game
     std::vector<glm::mat4> shadowPLTransforms;
     float shadowPLFarPlane;
 
+    GLuint dummyNormalTex;
+
     void initFramebuffer()
     {
         glEnable(GL_MULTISAMPLE);
@@ -1203,7 +1256,7 @@ namespace Game
         glm::vec3 poss[] = {glm::vec3(0, 13, 0), glm::vec3(0, 14, 0), glm::vec3(0, 15, 0), glm::vec3(0, 16, 0), glm::vec3(0, 17, 0)};
         std::vector<glm::mat4> modelMats(sizeof(poss)/sizeof(glm::vec3));
 
-        for(int i = 0; i < modelMats.size(); i++)
+        for(int i = 0; i < (int)modelMats.size(); i++)
             modelMats[i] = glm::translate(glm::mat4(1), poss[i]);
 
         Mesh& particle = Storage::getMesh("mesh/particle.obj");
@@ -1214,7 +1267,7 @@ namespace Game
         glBindBuffer(GL_ARRAY_BUFFER, buffer);
         glBufferData(GL_ARRAY_BUFFER, modelMats.size() * sizeof(glm::mat4), &modelMats[0], GL_STATIC_DRAW);
         // vertex Attributes
-        GLsizei vec4Size = sizeof(glm::vec4);
+        auto vec4Size = sizeof(glm::vec4);
         glEnableVertexAttribArray(3);
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
         glEnableVertexAttribArray(4);
@@ -1253,7 +1306,6 @@ namespace Game
         glm::mat4 lightProjection = glm::ortho(-viewSize, viewSize, -viewSize, viewSize, near_plane, far_plane);
 
         glm::vec3 center = glm::vec3(5, 0, 0);
-        glm::vec3 lightDir = glm::vec3(0, -1, -1);
         glm::vec3 side = glm::cross(sun.dir, glm::vec3(0, 0, 1));
         glm::vec3 up = glm::cross(side, sun.dir);
         if(up.z < 0)up = -up;
@@ -1308,12 +1360,28 @@ namespace Game
         };
     }
 
+    void initDummyNormalTex()
+    {
+        glGenTextures(1, &dummyNormalTex);
+        glBindTexture(GL_TEXTURE_2D, dummyNormalTex);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        unsigned char texData[] = {128, 128, 255};
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+    }
+
 
     void init()
     {
         initFramebuffer();
         initSkyboxVAO();
         initInstancedParticles();
+        initDummyNormalTex();
 
         CubeTexture& skyboxMountLake = Storage::getCubeTex("src/tex/mountainsCube");
 
@@ -1441,6 +1509,14 @@ namespace Game
         glBindTexture(GL_TEXTURE_2D, mesh.diffTexture->glIndx);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, mesh.specTexture->glIndx);
+
+        glActiveTexture(GL_TEXTURE2);
+
+        if(mesh.normalTexture != nullptr)    
+            glBindTexture(GL_TEXTURE_2D, mesh.normalTexture->glIndx);
+        else
+            glBindTexture(GL_TEXTURE_2D, dummyNormalTex);
+
         glBindVertexArray(mesh.VAO);
     }
 
@@ -1548,13 +1624,14 @@ namespace Game
 
         lightUseShader.set1Int("diffTexture", 0);
         lightUseShader.set1Int("specTexture", 1);
-        lightUseShader.set1Int("dirLightShadow", 2);
-        lightUseShader.set1Int("shadowPointDepth", 3);
-
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
+        lightUseShader.set1Int("normalTexture", 2);
+        lightUseShader.set1Int("dirLightShadow", 3);
+        lightUseShader.set1Int("shadowPointDepth", 4);
 
         glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
+
+        glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_CUBE_MAP, shadowPLCubeMap);
 
         lightUseShader.set1Float("shadowPLFarPlane", shadowPLFarPlane);
@@ -1574,7 +1651,6 @@ namespace Game
 
         setupMeshForDraw(pointShadowTest);
         drawMesh(pointShadowTest, pointShadowTestModel, lightUseShader);
-
 
 
         Shader& instanceShader = Storage::getShader("src/shaders/instance");
@@ -1660,11 +1736,9 @@ int main()
         shader.load(shaders2Load[i]);
     }
 
-
     Game::init();
 
     std::cout<<"LOAD AND INIT TIME: "<< (glfwGetTime() - loadStartTime)*1000<<"ms\n";
-
 
     //Game loop
     double lastFrameTime = glfwGetTime();
