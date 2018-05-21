@@ -41,11 +41,10 @@ void main()
     for(int i = 0; i < 9; i++)
         effectColor += edgeDetectKernel[i]/3.0*vec3(texture(screenTex, texCoords.st + moves[i]));
 
-    //effectColor = vec3(0, 0, 1);
+    //float mixFactor = min(max(1.1-length(texCoords - vec2(0.5))*0.2, 0), 1);
+    //FragColor.xyz = mix(effectColor*50, texture(screenTex, texCoords).rgb, mixFactor);
 
-    float mixFactor = min(max(1.1-length(texCoords - vec2(0.5))*0.2, 0), 1);
-    FragColor.xyz = mix(effectColor*50, texture(screenTex, texCoords).rgb, mixFactor);
-
+    FragColor = texture(screenTex, texCoords);
 
     float gamma = 2.2;
     FragColor.xyz = pow(FragColor.xyz, vec3(1.0/gamma));

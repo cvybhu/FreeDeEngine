@@ -191,9 +191,11 @@ struct Mesh //holds vertex data and pointers to used textures from global storag
     void unloadFromRAM();
     void unloadFromGPU();
 
-    Texture* diffTexture;
-    Texture* specTexture;
-    Texture* normalTexture;
+    Texture* diffTex;
+    Texture* specTex;
+    Texture* normalTex; 
+    Texture* dispTex; //displacement (parallax occlusion)
+    Texture* ambientOccTex;
 
     struct Vertex
     {
@@ -201,6 +203,7 @@ struct Mesh //holds vertex data and pointers to used textures from global storag
         glm::vec3 normal;
         glm::vec2 texCoords;
         glm::vec3 tangent;
+        glm::vec3 bitangent;
     };
 
 
@@ -465,6 +468,10 @@ namespace Window
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_STENCIL_TEST);
 
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
+
         glfwSetCursorPos(window, mousePos.x, mousePos.y);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
@@ -715,13 +722,13 @@ void Mesh::calculateTangents()
 
         float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 
-        glm::vec3 tangent;
-        tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-        tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-        tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+        glm::vec3 tangent =  (edge1 * deltaUV2.y   - edge2 * deltaUV1.y)*f;
         tangent = glm::normalize(tangent);
 
+        glm::vec3 bitangent = f * (-deltaUV2.x * edge1 + deltaUV1.x * edge2);
+
         curVerts[0].tangent = curVerts[1].tangent = curVerts[2].tangent = tangent;
+        curVerts[0].bitangent = curVerts[1].bitangent = curVerts[2].bitangent = bitangent;
     }
 }
 
@@ -735,12 +742,12 @@ void Mesh::loadToRAM(const char* filePath)
     std::vector<glm::vec3> vecNormals;
     std::vector<glm::vec2> texCoords;
 
-    specTexture = nullptr;
-    normalTexture = nullptr;
+    specTex = nullptr;
+    normalTex = nullptr;
 
     while(file >> input)
     {
-        if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "diffTex" && input != "specTex" && input != "normalTex")
+        if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "diffTex" && input != "specTex" && input != "normalTex" && input != "dispTex" && input != "ambientOccTex")
             continue;
 
         if(input == "v")
@@ -792,10 +799,10 @@ void Mesh::loadToRAM(const char* filePath)
             std::string texPath;
             file >> texPath;
 
-            diffTexture = &Storage::getTex(texPath.c_str());
+            diffTex = &Storage::getTex(texPath.c_str());
 
-            if(!diffTexture->isOnRAM)
-                diffTexture->loadToRAM(texPath.c_str());
+            if(!diffTex->isOnRAM)
+                diffTex->loadToRAM(texPath.c_str());
 
             continue;
         }
@@ -805,10 +812,10 @@ void Mesh::loadToRAM(const char* filePath)
             std::string texPath;
             file >> texPath;
 
-            specTexture = &Storage::getTex(texPath.c_str());
+            specTex = &Storage::getTex(texPath.c_str());
 
-            if(!specTexture->isOnRAM)
-                specTexture->loadToRAM(texPath.c_str());
+            if(!specTex->isOnRAM)
+                specTex->loadToRAM(texPath.c_str());
 
             continue;
         }
@@ -818,17 +825,41 @@ void Mesh::loadToRAM(const char* filePath)
             std::string texPath;
             file >> texPath;
 
-            normalTexture = &Storage::getTex(texPath.c_str());
+            normalTex = &Storage::getTex(texPath.c_str());
 
-            if(!normalTexture->isOnRAM)
-                normalTexture->loadToRAM(texPath.c_str());
+            if(!normalTex->isOnRAM)
+                normalTex->loadToRAM(texPath.c_str());
 
             continue;
         }
+
+        if(input == "dispTex")
+        {
+            std::string texPath;
+            file >> texPath;
+
+            dispTex = &Storage::getTex(texPath.c_str());
+
+            if(!dispTex->isOnRAM)
+                dispTex->loadToRAM(texPath.c_str());
+
+            continue;
+        }   
+
+        if(input == "ambientOccTex")
+        {
+            std::string texPath;
+            file >> texPath;
+
+            ambientOccTex = &Storage::getTex(texPath.c_str());
+
+            if(!ambientOccTex->isOnRAM)
+                ambientOccTex->loadToRAM(texPath.c_str());
+        }
     }
 
-    if(specTexture == nullptr)
-        specTexture = diffTexture;
+    if(specTex == nullptr)
+        specTex = diffTex;
 
     file.close();
 
@@ -871,16 +902,25 @@ void Mesh::loadToGPU()
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
 
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, bitangent));
+
     glBindVertexArray(0);
 
-    if(!diffTexture->isOnGPU)
-        diffTexture->loadToGPU(true);
+    if(diffTex != nullptr && !diffTex->isOnGPU)
+        diffTex->loadToGPU(true);
 
-    if(!specTexture->isOnGPU)
-        specTexture->loadToGPU();
+    if(specTex != nullptr && !specTex->isOnGPU)
+        specTex->loadToGPU();
 
-    if(normalTexture != nullptr && !normalTexture->isOnGPU)
-        normalTexture->loadToGPU();
+    if(normalTex != nullptr && !normalTex->isOnGPU)
+        normalTex->loadToGPU();
+
+    if(dispTex != nullptr && !dispTex->isOnGPU)
+        dispTex->loadToGPU();
+
+    if(ambientOccTex != nullptr && !ambientOccTex->isOnGPU)
+        ambientOccTex->loadToGPU();
 }
 
 void Mesh::unloadFromGPU()
@@ -1117,6 +1157,11 @@ namespace Game
     GLuint skyboxVAO, skyboxVBO;
 
 
+    GLuint defaultDiffTex; //also specular
+    GLuint defaultNormalTex;
+    GLuint defaultDispTex;
+    GLuint defaultAmbientOccTex;
+
     glm::ivec2 shadowRes = glm::ivec2(1024);
 
     GLuint dirLightShadowFBO;
@@ -1129,7 +1174,6 @@ namespace Game
     std::vector<glm::mat4> shadowPLTransforms;
     float shadowPLFarPlane;
 
-    GLuint dummyNormalTex;
 
     void initFramebuffer()
     {
@@ -1360,19 +1404,32 @@ namespace Game
         };
     }
 
-    void initDummyNormalTex()
+    GLuint create1x1Texture(glm::ivec3 color)
     {
-        glGenTextures(1, &dummyNormalTex);
-        glBindTexture(GL_TEXTURE_2D, dummyNormalTex);
+        GLuint tex;
+
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        unsigned char texData[] = {128, 128, 255};
+        char texData[] = {(char)color.x, (char)color.y, (char)color.z};
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+
+        return tex;
+    }
+
+
+    void initDefaultTextures()
+    {
+        defaultDiffTex = create1x1Texture({128, 128, 128});
+        defaultNormalTex = create1x1Texture({128, 128, 255});
+        defaultDispTex = create1x1Texture({0, 0, 0});
+        defaultAmbientOccTex = create1x1Texture({255, 255, 255});
     }
 
 
@@ -1381,7 +1438,7 @@ namespace Game
         initFramebuffer();
         initSkyboxVAO();
         initInstancedParticles();
-        initDummyNormalTex();
+        initDefaultTextures();
 
         CubeTexture& skyboxMountLake = Storage::getCubeTex("src/tex/mountainsCube");
 
@@ -1506,16 +1563,39 @@ namespace Game
     void setupMeshForDraw(const Mesh& mesh)
     {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mesh.diffTexture->glIndx);
+
+        if(mesh.diffTex != nullptr)
+            glBindTexture(GL_TEXTURE_2D, mesh.diffTex->glIndx);
+        else
+            glBindTexture(GL_TEXTURE_2D, defaultDiffTex);
+
+
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, mesh.specTexture->glIndx);
+
+        if(mesh.specTex != nullptr)
+            glBindTexture(GL_TEXTURE_2D, mesh.specTex->glIndx);
+        else
+            glBindTexture(GL_TEXTURE_2D, defaultDiffTex);
 
         glActiveTexture(GL_TEXTURE2);
 
-        if(mesh.normalTexture != nullptr)    
-            glBindTexture(GL_TEXTURE_2D, mesh.normalTexture->glIndx);
+        if(mesh.normalTex != nullptr)    
+            glBindTexture(GL_TEXTURE_2D, mesh.normalTex->glIndx);
         else
-            glBindTexture(GL_TEXTURE_2D, dummyNormalTex);
+            glBindTexture(GL_TEXTURE_2D, defaultNormalTex);
+
+
+        glActiveTexture(GL_TEXTURE3);
+        if(mesh.dispTex != nullptr)
+            glBindTexture(GL_TEXTURE_2D, mesh.dispTex->glIndx);
+        else
+            glBindTexture(GL_TEXTURE_2D, defaultDispTex);
+
+        glActiveTexture(GL_TEXTURE4);
+        if(mesh.ambientOccTex != nullptr)
+            glBindTexture(GL_TEXTURE_2D, mesh.ambientOccTex->glIndx);
+        else
+            glBindTexture(GL_TEXTURE_2D, defaultAmbientOccTex);
 
         glBindVertexArray(mesh.VAO);
     }
@@ -1555,6 +1635,8 @@ namespace Game
 
         setupMeshForDraw(planeMesh);
         drawMesh(planeMesh, planeModel, dirLightShadow);
+
+        
 
         setupMeshForDraw(stonePlace);
         glm::mat4 stonePlaceModel = glm::translate(glm::mat4(1), glm::vec3(0, -12, 0));
@@ -1625,19 +1707,24 @@ namespace Game
         lightUseShader.set1Int("diffTexture", 0);
         lightUseShader.set1Int("specTexture", 1);
         lightUseShader.set1Int("normalTexture", 2);
-        lightUseShader.set1Int("dirLightShadow", 3);
-        lightUseShader.set1Int("shadowPointDepth", 4);
+        lightUseShader.set1Int("dispTex", 3);
+        lightUseShader.set1Int("ambientOccTex", 4);
 
-        glActiveTexture(GL_TEXTURE3);
+        lightUseShader.set1Int("dirLightShadow", 5);
+        lightUseShader.set1Int("shadowPointDepth", 6);
+
+        glActiveTexture(GL_TEXTURE5);
         glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
 
-        glActiveTexture(GL_TEXTURE4);
+        glActiveTexture(GL_TEXTURE6);
         glBindTexture(GL_TEXTURE_CUBE_MAP, shadowPLCubeMap);
 
         lightUseShader.set1Float("shadowPLFarPlane", shadowPLFarPlane);
 
         setupMeshForDraw(planeMesh);
         drawMesh(planeMesh, planeModel, lightUseShader);
+
+
 
         setupMeshForDraw(stonePlace);
         drawMesh(stonePlace, stonePlaceModel, lightUseShader);
@@ -1683,8 +1770,17 @@ namespace Game
 
         //drawLights(pointLights, projectionMatrix, viewMatrix);
 
+        /*
+        Shader& showTBN = Storage::getShader("src/shaders/showTBN");
+        showTBN.use();
 
+        showTBN.setMat4("projView", projectionMatrix * viewMatrix);
 
+        setupMeshForDraw(stonePlace);
+        drawMesh(stonePlace, stonePlaceModel, showTBN);
+        */
+
+        
         //Post processing
         Shader& postProcess = Storage::getShader("src/shaders/postProcessTest");
 
@@ -1728,7 +1824,7 @@ int main()
     }
 
 
-    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow"};
+    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow", "src/shaders/showTBN"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {

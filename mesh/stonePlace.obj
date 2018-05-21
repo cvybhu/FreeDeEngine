@@ -2,6 +2,9 @@
 diffTex tex/ROCKY_GROUND_DIFF.png
 specTex tex/ROCKY_GROUND_SPEC.png
 normalTex tex/ROCKY_GROUND_NORM.png
+dispTex tex/ROCKY_GROUND_DISP.png
+ambientOccTex tex/ROCKY_GROUND_AO.png
+
 
 mtllib stonePlace.mtl
 o Cube_Cube.001

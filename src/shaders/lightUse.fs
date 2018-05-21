@@ -24,11 +24,10 @@ in VS_OUT
 {
     vec3 fragPos;
     vec2 texCoords;
-    vec4 fragPosDirLightSpace;
-    vec3 T;
-    vec3 N;
-    vec3 B;
     mat3 TBN;
+    vec3 fragPosTan;
+    vec3 viewPosTan;
+    vec4 fragPosDirLightSpace;
 } In;
 
 
@@ -38,7 +37,8 @@ out vec4 fragColor;
 uniform sampler2D diffTexture;
 uniform sampler2D specTexture;
 uniform sampler2D normalTexture;
-
+uniform sampler2D dispTex;
+uniform sampler2D ambientOccTex;
 
 uniform vec3 ambientLight;
 uniform vec3 viewPos;
@@ -58,43 +58,45 @@ uniform float shadowPLFarPlane;
 float shininess = 32.0f;
 float specularity = 0.2f;
 
-vec3 calculatePointLight(PointLight light, vec3 normal)
+vec3 calculatePointLight(PointLight light, vec3 normal, vec2 texCoords)
 {
-    vec3 lightDir = normalize(light.pos - In.fragPos);
-    vec3 viewDir = normalize(viewPos -In.fragPos);
+    vec3 lightPos = In.TBN * light.pos;
+
+    vec3 lightDir = normalize(lightPos - In.fragPosTan);
+    vec3 viewDir = normalize(In.viewPosTan - In.fragPosTan);
 
     // diffuse
     float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = light.color * diff * texture(diffTexture, In.texCoords).rgb;
+    vec3 diffuse = light.color * diff * texture(diffTexture, texCoords).rgb;
 
     // specular
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 16.0);
 
-    vec3 specular = light.color * spec * specularity * texture(specTexture, In.texCoords).rgb;
+    vec3 specular = light.color * spec * specularity * texture(specTexture, texCoords).rgb;
 
     // attenuation
-    float distance    = length(light.pos -In.fragPos);
+    float distance    = length(lightPos - In.fragPosTan);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-    return (diffuse + specular)*attenuation;
+    return (diffuse + specular) * attenuation;
 }
 
 
-vec3 calculateDirLight(DirLight light, vec3 normal)
+vec3 calculateDirLight(DirLight light, vec3 normal, vec2 texCoords)
 {
-    vec3 lightDir = normalize(-light.dir);
-    vec3 viewDir = normalize(viewPos - In.fragPos);
+    vec3 lightDir = normalize(In.TBN * - light.dir);
+    vec3 viewDir = normalize(In.viewPosTan - In.fragPosTan);
 
     // diffuse
     float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = light.color * diff * texture(diffTexture, In.texCoords).rgb;
+    vec3 diffuse = light.color * diff * texture(diffTexture, texCoords).rgb;
 
     // specular
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 32);
 
-    vec3 specular = light.color * spec * specularity * texture(specTexture, In.texCoords).rgb;
+    vec3 specular = light.color * spec * specularity * texture(specTexture, texCoords).rgb;
 
     return (diffuse + specular);
 }
@@ -152,7 +154,7 @@ float dirLightShadowFact()
 float PointShadowCalculation()
 {
     // get vector between fragment position and light position
-    vec3 fragToLight =In.fragPos - shadowPointLight.pos;
+    vec3 fragToLight = In.fragPos - shadowPointLight.pos;
     // use the light to fragment vector to sample from the depth map
     float closestDepth = texture(shadowPointDepth, fragToLight).r;
     // it is currently in linear range between [0,1]. Re-transform back to original value
@@ -174,7 +176,7 @@ float PointShadowCalculation()
 
     float shadow = 0.0;
     int samples  = 20;
-    float viewDistance = length(viewPos -In.fragPos);
+    float viewDistance = length(viewPos - In.fragPos);
     float diskRadius = 0.05;
     for(int i = 0; i < samples; ++i)
     {
@@ -188,24 +190,68 @@ float PointShadowCalculation()
     return shadow;
 }
 
-float diffVec(vec3 a, vec3 b)
+vec2 parallaxMaping()
 {
-    return abs(a.x-b.x) + abs(a.y-b.y) + abs(a.z-b.z);
+    vec3 viewDir = normalize(In.fragPosTan - In.viewPosTan); 
+
+    float depth = 0.04;
+
+    float maxSteps = 40.f;
+    float minSteps = 5.f;
+    
+    int steps = int(maxSteps);//int(mix(maxSteps, minSteps, abs(dot(vec3(0.0, 0.0, -1.0), viewDir)) * 0.05));  
+
+    vec3 oneStep = viewDir / -viewDir.z * depth / float(steps);
+    oneStep.z = -oneStep.z;
+
+    vec2 res = In.texCoords;
+
+    vec3 curVec = vec3(0);
+    for(int s = 0; s <= steps; s++)
+    {
+        float curHeight = texture(dispTex, In.texCoords + curVec.xy).r * depth;
+
+        if(curVec.z >= curHeight)
+        {
+            if(s != 0)
+            {
+                vec3 lastVec = curVec - oneStep;
+                float lastHeight = texture(dispTex, In.texCoords + lastVec.xy).r * depth;
+
+                float factor = (lastHeight - lastVec.z) / ((curVec.z - curHeight) + (lastHeight - lastVec.z));
+
+                curVec = lastVec + oneStep * factor;
+            }
+
+            res = res + curVec.xy ;
+
+            break;
+        }
+
+        curVec += oneStep;
+    }
+
+    return res;
 }
+
 
 
 void main()
 {
-    if(texture(diffTexture, In.texCoords).a < 0.01)
+    vec2 texCoords = parallaxMaping();
+
+    if(texture(diffTexture, texCoords).a < 0.01)
         discard;
 
-    vec3 result = ambientLight * texture(diffTexture, In.texCoords).rgb;
+    vec3 result = ambientLight * texture(diffTexture, texCoords).rgb;
 
-    vec3 normal = texture(normalTexture, In.texCoords).rgb;
+    vec3 normal = texture(normalTexture, texCoords).rgb;
     normal = normalize(normal * 2.0 - vec3(1.0));
-    normal = (In.TBN * normal); 
+    //normal = (In.TBN * normal); 
 
-    result += (1.0 - PointShadowCalculation()) * calculatePointLight(shadowPointLight, normal);
-    result += (1.0 - dirLightShadowFact()) * calculateDirLight(dirLight, normal);
+    result += (1.0 - PointShadowCalculation()) * calculatePointLight(shadowPointLight, normal, texCoords);
+    result += (1.0 - dirLightShadowFact()) * calculateDirLight(dirLight, normal, texCoords);
     fragColor = vec4(result, 1);
+
+    fragColor *= texture(ambientOccTex, texCoords).r;
 }
