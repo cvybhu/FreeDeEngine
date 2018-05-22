@@ -192,15 +192,21 @@ float PointShadowCalculation()
 
 vec2 parallaxMaping()
 {
-    vec3 viewDir = normalize(In.fragPosTan - In.viewPosTan); 
 
     float depth = 0.04;
 
-    float maxSteps = 40.f;
-    float minSteps = 5.f;
-    
-    int steps = int(maxSteps);//int(mix(maxSteps, minSteps, abs(dot(vec3(0.0, 0.0, -1.0), viewDir)) * 0.05));  
+    //float maxSteps = 10.f;
+    //float minSteps = 5.f;
+    //int(mix(maxSteps, minSteps, abs(dot(vec3(0.0, 0.0, -1.0), viewDir)) * 0.05));  
 
+    int steps = 10;
+    
+    bool binsearch = true;
+    int binsearchSteps = 10;
+    float binsearchPrecision = 1.0 / pow(2.0, binsearchSteps);
+
+
+    vec3 viewDir = normalize(In.fragPosTan - In.viewPosTan); 
     vec3 oneStep = viewDir / -viewDir.z * depth / float(steps);
     oneStep.z = -oneStep.z;
 
@@ -216,11 +222,40 @@ vec2 parallaxMaping()
             if(s != 0)
             {
                 vec3 lastVec = curVec - oneStep;
-                float lastHeight = texture(dispTex, In.texCoords + lastVec.xy).r * depth;
 
-                float factor = (lastHeight - lastVec.z) / ((curVec.z - curHeight) + (lastHeight - lastVec.z));
+                if(binsearch)
+                {   
+                    float low = 0;
+                    float high = 1;
+                    float res = 1;
 
-                curVec = lastVec + oneStep * factor;
+                    //while(high - low > binsearchPrecision)
+                    for(int bs = 0; bs < binsearchSteps; bs++)
+                    {
+                        float mid = (low + high)/2;
+
+                        curVec = lastVec + mid * oneStep;
+
+                        if(curVec.z >= texture(dispTex, In.texCoords + curVec.xy).r * depth)
+                        {
+                            res = mid;
+                            high = mid - binsearchPrecision;
+                        }
+                        else
+                            low = mid + binsearchPrecision;
+                    }
+
+                    curVec = lastVec + oneStep * res;
+                }
+                else
+                {
+                    float lastHeight = texture(dispTex, In.texCoords + lastVec.xy).r * depth;
+
+                    float factor = (lastHeight - lastVec.z) / ((curVec.z - curHeight) + (lastHeight - lastVec.z));
+
+                    curVec = lastVec + oneStep * factor;
+
+                }
             }
 
             res = res + curVec.xy ;
@@ -235,10 +270,17 @@ vec2 parallaxMaping()
 }
 
 
+bool parallaxMap = true;
+
 
 void main()
 {
-    vec2 texCoords = parallaxMaping();
+    vec2 texCoords;
+
+    if(parallaxMap)
+         texCoords = parallaxMaping();
+    else
+        texCoords = In.texCoords;
 
     if(texture(diffTexture, texCoords).a < 0.01)
         discard;

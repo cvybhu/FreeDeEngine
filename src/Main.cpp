@@ -9,6 +9,7 @@
 #include <stb_image.h>
 
 #include <iostream>
+#include <chrono>
 #include <fstream>
 #include <map>
 #include <iomanip>
@@ -28,11 +29,19 @@ public:
 
     void tell();
 private:
+    using time_point = std::chrono::time_point<std::chrono::high_resolution_clock>;
+
+    double getTimeFrom(time_point t);
+
     const char* name;
-    double startTime;
+    time_point startTime;
+
     const double tellCooldown;
-    double lastTellTime;
+    time_point lastTellTime;
+
     double maxTime;
+
+    std::chrono::high_resolution_clock cock;
 };
 
 
@@ -307,17 +316,23 @@ TimeTeller::TimeTeller(const char*Name, double TellCooldown) : tellCooldown(Tell
 {
     maxTime = -1;
     name = Name;
-    lastTellTime = glfwGetTime();
+    lastTellTime = cock.now();
 }
 
 void TimeTeller::startMeasuring()
 {
-    startTime = glfwGetTime();
+    startTime = cock.now();
 }
+
+double TimeTeller::getTimeFrom(time_point t)
+{
+    return std::chrono::duration<double>(cock.now() - t).count();
+}
+
 
 void TimeTeller::stopMeasuring()
 {
-    double curTime = glfwGetTime() - startTime;
+    double curTime = getTimeFrom(startTime);
 
     if(maxTime < 0)
     {
@@ -333,10 +348,10 @@ void TimeTeller::stopMeasuring()
 
 void TimeTeller::tell()
 {
-    if(glfwGetTime() - lastTellTime >= tellCooldown)
+    if(getTimeFrom(lastTellTime) >= tellCooldown)
     {
         std::cout << name << std::setprecision(5) << std::fixed << ": " << maxTime*1000.0 << "ms\n";
-        lastTellTime = glfwGetTime();
+        lastTellTime = cock.now();
         maxTime = -1;
     }
 }
@@ -441,6 +456,7 @@ namespace Window
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+        
         #ifdef __APPLE__
             glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
         #endif
@@ -455,7 +471,10 @@ namespace Window
             glfwTerminate();
         }
 
+
         glfwMakeContextCurrent(window);
+        glfwSwapInterval(0);   //(VSYNC)
+
         glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
         glfwSetCursorPosCallback(window, mouse_callback);
 
@@ -1862,16 +1881,17 @@ int main()
 
         Game::draw();
 
+        glfwSwapBuffers(Window::window);
+
         renderTimeTeller.stopMeasuring();
+
+        //Window update
+        Window::update();
 
 
         frameTimeTeller.stopMeasuring();
-        frameTimeTeller.tell();
+        //frameTimeTeller.tell();
         renderTimeTeller.tell();
-
-        //Window updates
-        Window::update();
-        glfwSwapBuffers(Window::window);
     }
 
     return 0;
