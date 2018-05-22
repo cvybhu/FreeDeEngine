@@ -31,7 +31,8 @@ in VS_OUT
 } In;
 
 
-out vec4 fragColor;
+layout (location = 0) out vec4 fragColor;
+layout (location = 1) out vec4 bloomColor;
 
 
 uniform sampler2D diffTexture;
@@ -53,6 +54,8 @@ uniform sampler2D dirLightShadow;
 uniform PointLight shadowPointLight;
 uniform samplerCube shadowPointDepth;
 uniform float shadowPLFarPlane;
+
+uniform float bloomMinBright;
 
 
 float shininess = 32.0f;
@@ -254,7 +257,6 @@ vec2 parallaxMaping()
                     float factor = (lastHeight - lastVec.z) / ((curVec.z - curHeight) + (lastHeight - lastVec.z));
 
                     curVec = lastVec + oneStep * factor;
-
                 }
             }
 
@@ -296,4 +298,11 @@ void main()
     fragColor = vec4(result, 1);
 
     fragColor *= texture(ambientOccTex, texCoords).r;
+
+    float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+
+    if(brightness > bloomMinBright)
+        bloomColor = fragColor;
+    else
+        bloomColor = vec4(0, 0, 0, 1);
 }

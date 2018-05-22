@@ -166,6 +166,7 @@ struct Shader   //loads and compiles openGL shader. has cool methods to send dat
 
     void use(){glUseProgram(program);}
 
+
     void set1Int(const char* name, int a)                       {glUniform1i(glGetUniformLocation(program, name), a);}
     void set2Int(const char* name, int a, int b)                {glUniform2i(glGetUniformLocation(program, name), a, b);}
     void set3Int(const char* name, int a, int b, int c)         {glUniform3i(glGetUniformLocation(program, name), a, b, c);}
@@ -1164,10 +1165,12 @@ namespace Game
 
     GLuint postProcFramebuff;   //not multisampled buff for postprocessing
     GLuint postProcFramebuffColorTex;
+    GLuint postProcBloomTex;
 
     const GLuint MSAASamples = 4;
     GLuint multiSampleFramebuff; //main render buff
     GLuint multiSampleColorTex;
+    GLuint multiSampleBloomTex;
     GLuint depthStencMultisampleRenderbuff;
 
     GLuint screenQuadVAO, screenQuadVBO;
@@ -1195,6 +1198,12 @@ namespace Game
 
     float exposure = 0.5;
 
+    GLuint bloomFramebuffs[2];
+    GLuint bloomColorTexs[2];
+    
+    glm::ivec2 bloomRes = {Window::width/4, Window::height/4};
+    float bloomMinBrightness = 2.0;
+
     void initFramebuffer()
     {
         glEnable(GL_MULTISAMPLE);
@@ -1212,12 +1221,25 @@ namespace Game
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, multiSampleColorTex, 0);
 
+
+        glGenTextures(1, &multiSampleBloomTex);
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, multiSampleBloomTex);
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAASamples, GL_RGB16F, Window::width, Window::height, GL_TRUE);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, multiSampleBloomTex, 0);
+
+
+
         glGenRenderbuffers(1, &depthStencMultisampleRenderbuff);
         glBindRenderbuffer(GL_RENDERBUFFER, depthStencMultisampleRenderbuff);
         glRenderbufferStorageMultisample(GL_RENDERBUFFER, MSAASamples, GL_DEPTH24_STENCIL8, Window::width, Window::height);
-        //glBindRenderbuffer(GL_RENDERBUFFER, 0); //is this really necessary?
 
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencMultisampleRenderbuff);
+
+        GLenum drawAttachments[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+        glDrawBuffers(2, drawAttachments);
+
+
 
         if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             std::cout << "Failed to setup multisampled framebuffer!!!\n";
@@ -1228,7 +1250,7 @@ namespace Game
 
         glGenTextures(1, &postProcFramebuffColorTex);
         glBindTexture(GL_TEXTURE_2D, postProcFramebuffColorTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, Window::width, Window::height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, Window::width, Window::height, 0, GL_RGB, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1236,7 +1258,27 @@ namespace Game
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postProcFramebuffColorTex, 0);
 
+
+
         //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        glGenFramebuffers(2, bloomFramebuffs);
+        glGenTextures(2, bloomColorTexs);
+
+        for(int i = 0; i < 2; i++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, bloomFramebuffs[i]);
+            glBindTexture(GL_TEXTURE_2D, bloomColorTexs[i]);
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, bloomRes.x, bloomRes.y, 0, GL_RGB, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bloomColorTexs[i], 0);
+        }
+
 
         float screenQuadVerts[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
         -1.0f,  1.0f,  0.0f, 1.0f,
@@ -1650,6 +1692,31 @@ namespace Game
         glDrawArrays(GL_TRIANGLES, 0, mesh.vertsNum);
     }
 
+    void blurTheBloom(int passes)
+    {
+        glDisable(GL_DEPTH_TEST);
+
+        Shader& blurShader = Storage::getShader("src/shaders/gausBlur");
+        blurShader.use();
+
+        glBindVertexArray(screenQuadVAO);
+
+        glViewport(0, 0, bloomRes.x, bloomRes.y);
+        for(int i = 0; i < 2*passes; i++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, bloomFramebuffs[(i+1)%2]);
+
+            blurShader.set1Int("isHorizontal", (i%2 == 0));
+            //blurShader.set1Int("prevTex", 0)
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, bloomColorTexs[i%2]);
+            
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+    }
+
+
     void draw()
     {
         glm::mat4 projectionMatrix = cam.getProjectionMatrix();
@@ -1756,6 +1823,9 @@ namespace Game
 
         lightUseShader.set1Int("dirLightShadow", 5);
         lightUseShader.set1Int("shadowPointDepth", 6);
+        lightUseShader.set1Float("bloomMinBright", bloomMinBrightness);
+
+
 
         glActiveTexture(GL_TEXTURE5);
         glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
@@ -1802,6 +1872,7 @@ namespace Game
 
         oneColor.setMat4("projection", projectionMatrix);
         oneColor.setMat4("view", viewMatrix);
+        oneColor.set1Float("bloomMinBright", bloomMinBrightness);
 
         Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
         glBindVertexArray(lightMesh.VAO);
@@ -1826,24 +1897,55 @@ namespace Game
 
         
         //Post processing
-        Shader& postProcess = Storage::getShader("src/shaders/postProcessTest");
+        Shader& postProcess = Storage::getShader("src/shaders/postProcess");
 
 
+
+        //first blit MSAA->color-(downscale)->bloomBuff
         glBindFramebuffer(GL_READ_FRAMEBUFFER, multiSampleFramebuff);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postProcFramebuff);
-        glBlitFramebuffer(0, 0, Window::width, Window::height, 0, 0, Window::width, Window::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glReadBuffer(GL_COLOR_ATTACHMENT1);
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+        glBlitFramebuffer(0, 0, Window::width, Window::height, 0, 0, Window::width, Window::height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, postProcFramebuff);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, bloomFramebuffs[0]);
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+        glBlitFramebuffer(0, 0, Window::width, Window::height, 0, 0, bloomRes.x, bloomRes.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
+        //now MSAA of color
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, multiSampleFramebuff);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postProcFramebuff);
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+        glBlitFramebuffer(0, 0, Window::width, Window::height, 0, 0, Window::width, Window::height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+        GLenum blit_error = GL_NO_ERROR;
+        blit_error = glGetError();
+        if ( blit_error != GL_NO_ERROR )
+        {
+            //std::cout << "BlitFramebuffer failed with error: " <<  blit_error << '\n';
+        }
+
+        blurTheBloom(1);
+        
+        glViewport(0, 0, Window::width, Window::height);
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
         glClear(GL_COLOR_BUFFER_BIT);
 
         postProcess.use();
         postProcess.set1Float("exposure", exposure);
-        glBindVertexArray(screenQuadVAO);
+        postProcess.set1Int("screenTex", 0);
+        postProcess.set1Int("bloomTex", 1);
         glDisable(GL_DEPTH_TEST);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, postProcFramebuffColorTex);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, bloomColorTexs[0]);
+
         //glBindTexture(GL_TEXTURE_2D, dirLightShadowDepth);
+        glBindVertexArray(screenQuadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 }
@@ -1869,7 +1971,7 @@ int main()
     }
 
 
-    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcessTest", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow", "src/shaders/showTBN"};
+    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcess", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow", "src/shaders/showTBN", "src/shaders/gausBlur"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {

@@ -4,6 +4,7 @@ out vec4 FragColor;
 in vec2 texCoords;
 
 uniform sampler2D screenTex;
+uniform sampler2D bloomTex;
 
 
 float offset = 1.0 / 700.0;
@@ -50,6 +51,7 @@ void main()
     //reinhard hdr tone mapping
     //FragColor = FragColor / (FragColor + 1.0);
 
+    FragColor += vec4(texture(bloomTex, texCoords).rgb, 0);
 
     //exposure hdr tone mapping
     FragColor = 1 - exp(-FragColor * exposure);
