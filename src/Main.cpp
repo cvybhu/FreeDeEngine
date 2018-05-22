@@ -1193,6 +1193,7 @@ namespace Game
     std::vector<glm::mat4> shadowPLTransforms;
     float shadowPLFarPlane;
 
+    float exposure = 0.5;
 
     void initFramebuffer()
     {
@@ -1202,7 +1203,7 @@ namespace Game
 
         glGenTextures(1, &multiSampleColorTex);
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, multiSampleColorTex);
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAASamples, GL_RGB, Window::width, Window::height, GL_TRUE);
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAASamples, GL_RGB16F, Window::width, Window::height, GL_TRUE);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1227,7 +1228,7 @@ namespace Game
 
         glGenTextures(1, &postProcFramebuffColorTex);
         glBindTexture(GL_TEXTURE_2D, postProcFramebuffColorTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Window::width, Window::height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, Window::width, Window::height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1380,7 +1381,7 @@ namespace Game
     void initShadowPointLight()
     {
         shadowPointLight.pos = glm::vec3(20.5, -1, -1);
-        shadowPointLight.color = glm::vec3(0.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
+        shadowPointLight.color = glm::vec3(2.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
         shadowPointLight.constant = 1.f;
         shadowPointLight.linear = 0.1f;
         shadowPointLight.quadratic = 0.03f;
@@ -1466,7 +1467,7 @@ namespace Game
 
         skyboxIndex = skyboxMountLake.glIndx;
 
-        sun.color = glm::vec3(glm::vec2(0.5), 0.4);
+        sun.color = glm::vec3(glm::vec2(0.5), 0.4) * 5.f;
         sun.dir = {0, -1.0f, -1.0f};
 
         initDirLightShadow();
@@ -1489,10 +1490,32 @@ namespace Game
         //pointLights.emplace_back(light); pointLights.emplace_back(light2);
     }
 
-    void update(const GLdouble deltaTime)
+    void exposureTesting(float deltaTime)
+    {
+
+        float exposureSensitivity = 0.5;
+        if(Window::isPressed(GLFW_KEY_1))
+        {
+            exposure -= deltaTime * exposureSensitivity;
+            if(exposure < 0)
+                exposure = 0;
+            std::cout << "Exposure: " << exposure << '\n';        
+        }
+
+        if(Window::isPressed(GLFW_KEY_2))
+        {
+            exposure += deltaTime * exposureSensitivity;
+            if(exposure > 1)
+                exposure = 1;
+            std::cout << "Exposure: " << exposure << '\n';        
+        }
+    }
+
+    void update(float deltaTime)
     {
         cam.handleMovement(deltaTime);
 
+        exposureTesting(deltaTime);
 
         if(Window::isPressed(GLFW_KEY_P))
             std::cout << "Camera pos: (" << cam.pos.x << ' ' << cam.pos.y << ' ' << cam.pos.z << "\n";
@@ -1568,6 +1591,8 @@ namespace Game
 
         skyboxShader.setMat4("view", glm::mat3(viewMatrix));
         skyboxShader.setMat4("projection", projectionMatrix);
+
+        skyboxShader.set1Float("exposure", exposure);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxIndex);
@@ -1813,6 +1838,7 @@ namespace Game
         glClear(GL_COLOR_BUFFER_BIT);
 
         postProcess.use();
+        postProcess.set1Float("exposure", exposure);
         glBindVertexArray(screenQuadVAO);
         glDisable(GL_DEPTH_TEST);
         glActiveTexture(GL_TEXTURE0);
@@ -1873,7 +1899,7 @@ int main()
         if(Window::isPressed(GLFW_KEY_ESCAPE))
             glfwSetWindowShouldClose(Window::window, true);
 
-        Game::update(deltaTime);
+        Game::update((float)deltaTime);
 
 
         //rendering

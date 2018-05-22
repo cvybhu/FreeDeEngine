@@ -32,6 +32,7 @@ float blurKernel[9] = float[](
     1.0 / 16, 2.0 / 16, 1.0 / 16
 );
 
+uniform float exposure;
 
 
 void main()
@@ -44,8 +45,17 @@ void main()
     //float mixFactor = min(max(1.1-length(texCoords - vec2(0.5))*0.2, 0), 1);
     //FragColor.xyz = mix(effectColor*50, texture(screenTex, texCoords).rgb, mixFactor);
 
-    FragColor = texture(screenTex, texCoords);
+    FragColor = vec4(texture(screenTex, texCoords).rgb, 1);
 
+    //reinhard hdr tone mapping
+    //FragColor = FragColor / (FragColor + 1.0);
+
+
+    //exposure hdr tone mapping
+    FragColor = 1 - exp(-FragColor * exposure);
+
+
+    //gamma correction
     float gamma = 2.2;
     FragColor.xyz = pow(FragColor.xyz, vec3(1.0/gamma));
 }
