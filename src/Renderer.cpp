@@ -2,8 +2,10 @@
 
 #include <Window.hpp>
 #include <Storage.hpp>
+#include <Utils.hpp>
 #include <Logger.hpp>
-
+#include <algorithm>
+#include <glm/gtc/matrix_transform.hpp>
 
 Renderer::Renderer()
 {
@@ -11,12 +13,14 @@ Renderer::Renderer()
     bloomRes = renderRes;
 }
 
-void Renderer::init()
+void Renderer::init(int maxSpritesNum)
 {
     setupShaders();
     createMainFramebuff();
     createBloomFramebuffs();
+    createDefaultTextures();
     setupDrawOntoGeometry();
+    spritePool.init(maxSpritesNum);
 }
 
 void Renderer::setupShaders()
@@ -28,7 +32,8 @@ void Renderer::setupShaders()
     //shaders.main.setMat4("dirLightSpace", dirLightSpaceMat);
 
 
-    shaders.main.setVec3("ambientLight", glm::vec3(0.5));
+    shaders.main.use();
+    shaders.main.setVec3("ambientLight", glm::vec3(0.03));
     //shaders.main.setVec3("viewPos", cam.pos);
 
     shaders.main.set1Int("diffTexture", 0);
@@ -57,6 +62,7 @@ void Renderer::setupShaders()
     shaders.basic = Storage::getShader("src/shaders/basic");
 
     shaders.postProcess = Storage::getShader("src/shaders/postProcess");
+    shaders.postProcess.use();
     shaders.postProcess.set1Int("screenTex", 0);
     shaders.postProcess.set1Int("bloomTex", 1);
 }
@@ -241,7 +247,7 @@ void Renderer::setupMeshForDraw(const Mesh& mesh)
 
 
     glActiveTexture(GL_TEXTURE2);
-    if(mesh.normalTex != nullptr)    
+    if(mesh.normalTex != nullptr)
         glBindTexture(GL_TEXTURE_2D, mesh.normalTex->glIndx);
     else
         glBindTexture(GL_TEXTURE_2D, defaultTexs.normal);
@@ -271,6 +277,8 @@ void Renderer::drawMesh(Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader
 
 void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
 {
+    glm::vec3 viewPos = glm::vec4(0, 0, 0, 1) * transpose(viewMatrix);
+
     //Main framebuffer setup
     glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
     glViewport(0, 0, renderRes.x, renderRes.y);
@@ -298,16 +306,24 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
 
 
 
-
-    Mesh& planeMesh = Storage::getMesh("mesh/spacePlane.obj");
-
     shaders.main.use();
     shaders.main.setMat4("view", viewMatrix);
     shaders.main.setMat4("projection", projectionMatrix);
+    shaders.main.setVec3("viewPos", viewPos);
 
-    setupMeshForDraw(planeMesh);
-    drawMesh(planeMesh, glm::mat4(1), shaders.main);
+    loadPointLights2Shader();
 
+    Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
+    setupMeshForDraw(lightMesh);
+
+    for(PointLight* light : pointLights)
+        drawMesh(lightMesh, glm::translate(glm::mat4(1), light->pos), shaders.main);
+
+    for(Sprite3D* sprite : sprites)
+    {
+        setupMeshForDraw(*sprite->myMesh);
+        drawMesh(*sprite->myMesh, sprite->model, shaders.main);
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, Window::width, Window::height);
@@ -323,6 +339,35 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+void Renderer::loadPointLights2Shader()
+{
+    int pointLightsNum = 0;
+    int shadowPointLightsNum = 0;
+
+    for(PointLight* light : pointLights)
+        if(!light->shadow.active)
+        {
+            std::string&& indexAsString = convert2String(pointLightsNum);
+
+            shaders.main.setVec3(("pointLights[" + indexAsString + "].pos").c_str(), light->pos);
+            shaders.main.setVec3(("pointLights[" + indexAsString + "].color").c_str(), light->color);
+            shaders.main.set1Float(("pointLights[" + indexAsString + "].constant").c_str(), light->constant);
+            shaders.main.set1Float(("pointLights[" + indexAsString + "].linear").c_str(), light->linear);
+            shaders.main.set1Float(("pointLights[" + indexAsString + "].quadratic").c_str(), light->quadratic);
+
+            pointLightsNum++;
+        }
+        else
+        {
+
+
+
+        }
+
+    shaders.main.set1Int("pointLightsNum", pointLightsNum);
+    shaders.main.set1Int("shadowPointLightsNum", shadowPointLightsNum);
+}
+
 
 void Renderer::setRenderRes(glm::ivec2 newRenderRes)
 {
@@ -330,3 +375,31 @@ void Renderer::setRenderRes(glm::ivec2 newRenderRes)
 
     renderRes = newRenderRes;
 }
+
+Sprite3D* Renderer::addSprite3D(Mesh& itsMesh)
+{
+    Sprite3D* sprite = new Sprite3D(&itsMesh);
+    sprites.emplace_back(sprite);
+    return sprite;
+}
+
+void Renderer::removeSprite3D(Sprite3D* sprite)
+{
+    //spritePool.freeMem(sprite);
+
+    sprites.erase(find(sprites.begin(), sprites.end(), sprite));
+}
+
+PointLight* Renderer::addPointLight()
+{
+    PointLight* light = new PointLight;
+    pointLights.emplace_back(light);
+    return light;
+}
+
+void Renderer::removePointLight(PointLight* light)
+{
+    pointLights.erase(std::find(pointLights.begin(), pointLights.end(), light));
+    delete light;
+}
+

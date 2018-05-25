@@ -7,18 +7,29 @@
 #include <Texture.hpp>
 #include <Mesh.hpp>
 #include <Lights.hpp>
+#include <FixedSizeMemPool.hpp>
+#include <Sprite3D.hpp>
 
 class Renderer
 {
 public:
     Renderer();
-    void init();
+    void init(int maxSpritesNum);
 
     void setRenderRes(glm::ivec2 newRenderRes);
     void setBloomRes(glm::ivec2 newBloomRes);
 
+    Sprite3D* addSprite3D(Mesh& itsMesh);
+    void removeSprite3D(Sprite3D* sprite);
+
+    PointLight* addPointLight();
+    void removePointLight(PointLight* light);
+
+    DirLight* addDirLight();
+    void removeDirLight(DirLight* light);
+
     void draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
-    
+
     CubeTexture* currentSkybox = nullptr;
     float exposure = 0.5;
     float bloomMinBrightness = 1.0;
@@ -49,7 +60,7 @@ private:
 
     void deleteMainFramebuff();
     void deleteBloomFramebuffs();
-    
+
 
     //Shaders
     struct
@@ -90,4 +101,15 @@ private:
     //Drawing
     void setupMeshForDraw(const Mesh& mesh);
     void drawMesh(Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader);
+    void loadPointLights2Shader();
+
+    //Data storage
+    FixedSizeMemPool<Sprite3D> spritePool;
+    std::vector<Sprite3D*> sprites;
+
+    FixedSizeMemPool<PointLight> pointLightPool;
+    std::vector<PointLight*> pointLights;
+
+    FixedSizeMemPool<DirLight> dirLightPool;
+    std::vector<DirLight*> dirLightsPool;
 };

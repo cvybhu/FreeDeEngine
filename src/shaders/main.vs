@@ -39,10 +39,10 @@ void main()
 
     mat3 TBN = mat3(T, B, N);
 
-    Out.TBN = transpose(TBN);  
+    Out.TBN = transpose(TBN);
 
-    //Out.fragPosTan = Out.TBN * Out.fragPos;
-    //Out.viewPosTan = Out.TBN * viewPos;
+    Out.fragPosTan = Out.TBN * Out.fragPos;
+    Out.viewPosTan = Out.TBN * viewPos;
 
     gl_Position = projection * view * model * vec4(pos, 1.0);
 }

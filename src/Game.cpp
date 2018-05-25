@@ -60,7 +60,7 @@ namespace Game
 
     GLuint bloomFramebuffs[2];
     GLuint bloomColorTexs[2];
-    
+
     glm::ivec2 bloomRes = {Window::width/4, Window::height/4};
     float bloomMinBrightness = 2.0;
 
@@ -354,11 +354,12 @@ namespace Game
         defaultAmbientOccTex = create1x1Texture({255, 255, 255});
     }
 
+    Sprite3D* plane;
 
     void init()
     {
         render.setRenderRes({Window::width, Window::height});
-        render.init();
+        render.init(10);
 
         initFramebuffer();
         initSkyboxVAO();
@@ -366,33 +367,41 @@ namespace Game
         initDefaultTextures();
 
         CubeTexture& skyboxMountLake = Storage::getCubeTex("src/tex/mountainsCube");
-
         skyboxMountLake.loadToRAM("tex/mountainsCube");
         skyboxMountLake.loadToGPU(true);
-
-        skyboxIndex = skyboxMountLake.glIndx;
-
         render.currentSkybox = &skyboxMountLake;
 
+        plane = render.addSprite3D(Storage::getMesh("mesh/spacePlane.obj"));
+        plane->model = glm::rotate(glm::translate(glm::mat4(1), glm::vec3(4, -4, 2)), (float)glfwGetTime(), glm::vec3(0, 0, 1));
+
+        Sprite3D* stonePlace = render.addSprite3D(Storage::getMesh("mesh/stonePlace.obj"));
+        stonePlace->model = glm::translate(glm::mat4(1), glm::vec3(0, -12, 0));
+
+        Sprite3D* pointShadowTest = render.addSprite3D(Storage::getMesh("mesh/pointShadowTest.obj"));
+        pointShadowTest->model = glm::translate(glm::mat4(1), glm::vec3(20, 0, 0));
+
+        PointLight* light = render.addPointLight();
+        light->pos = {5, -5, -0.5};
+        light->color = glm::vec3(1.0, 0.2, 0.5); light->color *= 8;
+        light->constant = 1.f;
+        light->linear = 0.5f;
+        light->quadratic = 0.8f;
+
+        PointLight* light2 = render.addPointLight();
+        light2->pos = {-5, -10, 3};
+        light2->color = glm::vec3(0.3, 0.4, 0.9); light2->color *= 2;
+        light2->constant = 1.f;
+        light2->linear = 0.07f;
+        light2->quadratic = 0.04f;
+
+
+
+        skyboxIndex = skyboxMountLake.glIndx;
         sun.color = glm::vec3(glm::vec2(0.5), 0.4) * 5.f;
         sun.dir = {0, -1.0f, -1.0f};
 
         initDirLightShadow();
         initShadowPointLight();
-
-        PointLight light;
-        light.pos = {5, -5, -0.5};
-        light.color = glm::vec3(1.0, 0.2, 0.5); light.color *= 0.8;
-        light.constant = 1.f;
-        light.linear = 0.5f;
-        light.quadratic = 0.8f;
-
-        PointLight light2;
-        light2.pos = {-5, -10, 3};
-        light2.color = glm::vec3(0.3, 0.4, 0.9); light2.color *= 0.2;
-        light2.constant = 1.f;
-        light2.linear = 0.07f;
-        light2.quadratic = 0.04f;
 
         //pointLights.emplace_back(light); pointLights.emplace_back(light2);
     }
@@ -406,7 +415,7 @@ namespace Game
             exposure -= deltaTime * exposureSensitivity;
             if(exposure < 0)
                 exposure = 0;
-            std::cout << "Exposure: " << exposure << '\n';        
+            std::cout << "Exposure: " << exposure << '\n';
         }
 
         if(Window::isPressed(GLFW_KEY_2))
@@ -414,7 +423,7 @@ namespace Game
             exposure += deltaTime * exposureSensitivity;
             if(exposure > 1)
                 exposure = 1;
-            std::cout << "Exposure: " << exposure << '\n';        
+            std::cout << "Exposure: " << exposure << '\n';
         }
     }
 
@@ -530,7 +539,7 @@ namespace Game
 
         glActiveTexture(GL_TEXTURE2);
 
-        if(mesh.normalTex != nullptr)    
+        if(mesh.normalTex != nullptr)
             glBindTexture(GL_TEXTURE_2D, mesh.normalTex->glIndx);
         else
             glBindTexture(GL_TEXTURE_2D, defaultNormalTex);
@@ -576,7 +585,7 @@ namespace Game
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, bloomColorTexs[i%2]);
-            
+
             glDrawArrays(GL_TRIANGLES, 0, 6);
         }
     }
@@ -615,7 +624,7 @@ namespace Game
         setupMeshForDraw(planeMesh);
         drawMesh(planeMesh, planeModel, dirLightShadow);
 
-        
+
 
         setupMeshForDraw(stonePlace);
         glm::mat4 stonePlaceModel = glm::translate(glm::mat4(1), glm::vec3(0, -12, 0));
@@ -763,7 +772,7 @@ namespace Game
         drawMesh(stonePlace, stonePlaceModel, showTBN);
         */
 
-        
+
         //Post processing
         Shader& postProcess = Storage::getShader("src/shaders/postProcess");
 
@@ -797,7 +806,7 @@ namespace Game
         }
 
         blurTheBloom(1);
-        
+
         glViewport(0, 0, Window::width, Window::height);
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
         glClear(GL_COLOR_BUFFER_BIT);
