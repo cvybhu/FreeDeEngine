@@ -394,6 +394,16 @@ namespace Game
         light2->linear = 0.07f;
         light2->quadratic = 0.04f;
 
+        PointLight* shadowedLight = render.addPointLight();
+
+        shadowedLight->pos = glm::vec3(20.5, -1, -1);
+        shadowedLight->color = glm::vec3(2.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
+        shadowedLight->constant = 1.f;
+        shadowedLight->linear = 0.1f;
+        shadowedLight->quadratic = 0.03f;
+
+        shadowedLight->setupShadow(1024, 100.f);
+        shadowedLight->shadow.active = true;
 
 
         skyboxIndex = skyboxMountLake.glIndx;

@@ -4,9 +4,12 @@
 #include <glad/glad.h>
 #include <Shader.hpp>
 
+class Renderer;
 
 struct PointLight
 {
+public:
+//Lighting data
     glm::vec3 pos;
 
     glm::vec3 color;
@@ -15,23 +18,29 @@ struct PointLight
     float linear;
     float quadratic;
 
-    struct Shadow
+//Shadow
+    void setupShadow(int resolution, float farPlane = 100.f);
+    void destroyShadow();
+
+    void activateShadow();
+    void deactivateShadow();
+
+//private:
+    friend Renderer;
+
+    struct
     {
-    public:
-        void create(int resolution, float FarPlane = 100.f);
-        void destroy();
-        void loadMats2Shader(Shader& shader);
+        bool active;
 
-        bool active = false;
+        int resolution;
 
-        float farPlane;
-    private:
-        int res;
         GLuint fbuff;
         GLuint cubeMap;
-    };
 
-    Shadow shadow;
+        float farPlane;
+    } shadow;
+
+    void setupShadowRendering(Shader& shader);
 };
 
 

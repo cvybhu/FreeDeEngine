@@ -12,6 +12,7 @@ out VS_OUT
     mat3 TBN;
     vec3 fragPosTan;
     vec3 viewPosTan;
+    vec3 viewPos;
     //vec4 fragPosDirLightSpace;
 } Out;
 

@@ -25,6 +25,7 @@ void Renderer::init(int maxSpritesNum)
 
 void Renderer::setupShaders()
 {
+//Main
     shaders.main = Storage::getShader("src/shaders/main");
     //shaders.main.setVec3("dirLight.color", sun.color);
     //shaders.main.setVec3("dirLight.dir", sun.dir);
@@ -42,6 +43,8 @@ void Renderer::setupShaders()
     shaders.main.set1Int("dispTex", 3);
     shaders.main.set1Int("ambientOccTex", 4);
     shaders.main.set1Float("bloomMinBright", bloomMinBrightness);
+    shaders.main.set1Int("shadowPointDepth[0]", 5);
+    shaders.main.set1Int("shadowPointDepth[1]", 6);
 
     /*
     shaders.main.set1Int("dirLightShadow", 5);
@@ -55,12 +58,18 @@ void Renderer::setupShaders()
 
     shaders.main.set1Float("shadowPLFarPlane", shadowPLFarPlane);
     */
-
+//Skybox
     shaders.skybox = Storage::getShader("src/shaders/skybox");
-    shaders.bloomBlur = Storage::getShader("src/shaders/main");
-    shaders.showTBN = Storage::getShader("src/shaders/main");
-    shaders.basic = Storage::getShader("src/shaders/basic");
 
+//
+    //shaders.bloomBlur = Storage::getShader("src/shaders/main");
+    //shaders.showTBN = Storage::getShader("src/shaders/main");
+    //shaders.basic = Storage::getShader("src/shaders/basic");
+
+//point light shadows
+    shaders.pointLightShadow = Storage::getShader("src/shaders/pointLightShadow");
+
+//Postprocess
     shaders.postProcess = Storage::getShader("src/shaders/postProcess");
     shaders.postProcess.use();
     shaders.postProcess.set1Int("screenTex", 0);
@@ -277,7 +286,32 @@ void Renderer::drawMesh(Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader
 
 void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
 {
-    glm::vec3 viewPos = glm::vec4(0, 0, 0, 1) * transpose(viewMatrix);
+    glm::vec3 viewPos = glm::vec4(0, 0, 0, 1) * transpose(inverse(viewMatrix));
+
+
+    //Point light shadows
+    shaders.pointLightShadow.use();
+
+    for(PointLight* light : pointLights)
+        if(light->shadow.active)
+        {
+            light->setupShadowRendering(shaders.pointLightShadow);
+            glActiveTexture(GL_TEXTURE0);
+
+            for(Sprite3D* sprite : sprites)
+            {
+                if(sprite->myMesh->diffTex != nullptr)
+                    glBindTexture(GL_TEXTURE_2D, sprite->myMesh->diffTex->glIndx);
+                else
+                    glBindTexture(GL_TEXTURE_2D, defaultTexs.color);
+
+                glBindVertexArray(sprite->myMesh->VAO);
+
+                shaders.pointLightShadow.setMat4("model", sprite->model);
+                glDrawArrays(GL_TRIANGLES, 0, sprite->myMesh->vertsNum);
+            }
+        }
+
 
     //Main framebuffer setup
     glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
@@ -287,31 +321,17 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
 
     //Skybox
     if(currentSkybox != nullptr)
-    {
-        shaders.skybox.use();
-        shaders.skybox.setMat4("view", glm::mat3(viewMatrix));
-        shaders.skybox.setMat4("projection", projectionMatrix);
-        shaders.skybox.set1Float("exposure", exposure);
+        drawSkybox(viewMatrix, projectionMatrix);
 
-        glDepthMask(GL_FALSE);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
-
-        glBindVertexArray(skyboxCube.VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        glDepthMask(GL_TRUE);
-    }
-
-
-
+    //Main render
     shaders.main.use();
     shaders.main.setMat4("view", viewMatrix);
     shaders.main.setMat4("projection", projectionMatrix);
     shaders.main.setVec3("viewPos", viewPos);
 
+
     loadPointLights2Shader();
+
 
     Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
     setupMeshForDraw(lightMesh);
@@ -325,6 +345,8 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
         drawMesh(*sprite->myMesh, sprite->model, shaders.main);
     }
 
+
+    //Post processing
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, Window::width, Window::height);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -337,6 +359,24 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
 
     glBindVertexArray(screenQuad.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void Renderer::drawSkybox(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
+{
+    shaders.skybox.use();
+    shaders.skybox.setMat4("view", glm::mat3(viewMatrix));
+    shaders.skybox.setMat4("projection", projectionMatrix);
+    shaders.skybox.set1Float("exposure", exposure);
+
+    glDepthMask(GL_FALSE);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
+
+    glBindVertexArray(skyboxCube.VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    glDepthMask(GL_TRUE);
 }
 
 void Renderer::loadPointLights2Shader()
@@ -359,9 +399,18 @@ void Renderer::loadPointLights2Shader()
         }
         else
         {
+            std::string&& indexAsString = convert2String(shadowPointLightsNum);
 
+            shaders.main.setVec3(("shadowPointLights[" + indexAsString + "].pos").c_str(), light->pos);
+            shaders.main.setVec3(("shadowPointLights[" + indexAsString + "].color").c_str(), light->color);
+            shaders.main.set1Float(("shadowPointLights[" + indexAsString + "].constant").c_str(), light->constant);
+            shaders.main.set1Float(("shadowPointLights[" + indexAsString + "].linear").c_str(), light->linear);
+            shaders.main.set1Float(("shadowPointLights[" + indexAsString + "].quadratic").c_str(), light->quadratic);
 
+            glActiveTexture(GL_TEXTURE5 + shadowPointLightsNum);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadow.cubeMap);
 
+            shadowPointLightsNum++;
         }
 
     shaders.main.set1Int("pointLightsNum", pointLightsNum);

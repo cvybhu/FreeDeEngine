@@ -279,6 +279,8 @@ void main()
 {
     vec2 texCoords;
 
+    fragColor = vec4(viewPos, 1);
+
     if(parallaxMap)
          texCoords = parallaxMaping();
     else

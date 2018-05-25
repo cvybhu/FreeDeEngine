@@ -29,6 +29,7 @@ in VS_OUT
     mat3 TBN;
     vec3 fragPosTan;
     vec3 viewPosTan;
+    vec3 viewPos;
     //vec4 fragPosDirLightSpace;
 } In;
 
@@ -50,6 +51,7 @@ uniform PointLight pointLights[MAX_POINT_LIGHTS_NUM];
 uniform int pointLightsNum;
 
 uniform PointLight shadowPointLights[MAX_SHADOW_POINT_LIGHTS];
+uniform samplerCube shadowPointDepth[MAX_SHADOW_POINT_LIGHTS];
 uniform int shadowPointLightsNum;
 
 
@@ -59,7 +61,6 @@ uniform DirLight dirLight;
 uniform sampler2D dirLightShadow;
 
 uniform PointLight shadowPointLight;
-uniform samplerCube shadowPointDepth;
 uniform float shadowPLFarPlane;
 */
 
@@ -163,14 +164,15 @@ float dirLightShadowFact()
     return res;
 }
 
-float PointShadowCalculation()
+*/
+float PointShadowFact(PointLight light, samplerCube depthMap)
 {
     // get vector between fragment position and light position
-    vec3 fragToLight = In.fragPos - shadowPointLight.pos;
+    vec3 fragToLight = In.fragPos - light.pos;
     // use the light to fragment vector to sample from the depth map
-    float closestDepth = texture(shadowPointDepth, fragToLight).r;
+    float closestDepth = texture(depthMap, fragToLight).r;
     // it is currently in linear range between [0,1]. Re-transform back to original value
-    closestDepth *= shadowPLFarPlane;
+    closestDepth *= 100.f; //farPlane
     // now get current linear depth as the length between the fragment and light position
     float currentDepth = length(fragToLight);
     // now test for shadows
@@ -192,8 +194,8 @@ float PointShadowCalculation()
     float diskRadius = 0.05;
     for(int i = 0; i < samples; ++i)
     {
-        float closestDepth = texture(shadowPointDepth, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
-        closestDepth *= shadowPLFarPlane;   // Undo mapping [0;1]
+        float closestDepth = texture(depthMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+        closestDepth *= 100.f;   // Undo mapping [0;1]
         if(currentDepth - bias > closestDepth)
             shadow += 1.0;
     }
@@ -201,25 +203,24 @@ float PointShadowCalculation()
 
     return shadow;
 }
-*/
+
 
 vec2 parallaxMaping()
 {
-
     float depth = 0.04;
 
     //float maxSteps = 10.f;
     //float minSteps = 5.f;
-    //int(mix(maxSteps, minSteps, abs(dot(vec3(0.0, 0.0, -1.0), viewDir)) * 0.05));
+    //int(mix(maxSteps, minSteps, abs(dot(vec3(0.0, 0.0, -1.0), viewDir)) * 0.05));  
 
     int steps = 10;
-
+    
     bool binsearch = true;
     int binsearchSteps = 10;
     float binsearchPrecision = 1.0 / pow(2.0, binsearchSteps);
 
 
-    vec3 viewDir = normalize(In.fragPosTan - In.viewPosTan);
+    vec3 viewDir = normalize(In.fragPosTan - In.viewPosTan); 
     vec3 oneStep = viewDir / -viewDir.z * depth / float(steps);
     oneStep.z = -oneStep.z;
 
@@ -237,7 +238,7 @@ vec2 parallaxMaping()
                 vec3 lastVec = curVec - oneStep;
 
                 if(binsearch)
-                {
+                {   
                     float low = 0;
                     float high = 1;
                     float res = 1;
@@ -289,9 +290,9 @@ void main()
 {
     vec2 texCoords;
 
-    //if(parallaxMap)
-      //   texCoords = parallaxMaping();
-    //else
+    if(parallaxMap)
+         texCoords = parallaxMaping();
+    else
         texCoords = In.texCoords;
 
     if(texture(diffTexture, texCoords).a < 0.01)
@@ -305,11 +306,11 @@ void main()
 
     result += calcPointLights(normal, texCoords);
 
-    //result += (1.0 - PointShadowCalculation()) * calculatePointLight(shadowPointLight, normal, texCoords);
+    result += (1.0 - PointShadowFact(shadowPointLights[0], shadowPointDepth[0])) * calculatePointLight(shadowPointLights[0], normal, texCoords);
     //result += (1.0 - dirLightShadowFact()) * calculateDirLight(dirLight, normal, texCoords);
     fragColor = vec4(result, 1);
 
-    //fragColor *= texture(ambientOccTex, texCoords).r;
+    fragColor *= texture(ambientOccTex, texCoords).r;
 
     /*
     float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
@@ -320,5 +321,5 @@ void main()
         bloomColor = vec4(0, 0, 0, 1);
     */
 
-    //fragColor = texture(diffTexture, In.texCoords).rgba;
+    //fragColor = vec4(vec3(texture(dispTex, In.texCoords).r), 1);
 }

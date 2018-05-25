@@ -71,6 +71,7 @@ private:
         Shader bloomBlur;
         Shader showTBN;
         Shader basic;
+        Shader pointLightShadow;
     } shaders;
 
     void setupShaders();
@@ -101,6 +102,7 @@ private:
     //Drawing
     void setupMeshForDraw(const Mesh& mesh);
     void drawMesh(Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader);
+    void drawSkybox(glm::mat4& view, glm::mat4& projection);
     void loadPointLights2Shader();
 
     //Data storage
