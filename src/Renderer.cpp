@@ -28,7 +28,7 @@ void Renderer::setupShaders()
     //shaders.main.setMat4("dirLightSpace", dirLightSpaceMat);
 
 
-    shaders.main.setVec3("ambientLight", glm::vec3(0.05));
+    shaders.main.setVec3("ambientLight", glm::vec3(0.5));
     //shaders.main.setVec3("viewPos", cam.pos);
 
     shaders.main.set1Int("diffTexture", 0);
@@ -321,4 +321,12 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
 
     glBindVertexArray(screenQuad.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+
+void Renderer::setRenderRes(glm::ivec2 newRenderRes)
+{
+    //TODO - realoc buffers
+
+    renderRes = newRenderRes;
 }

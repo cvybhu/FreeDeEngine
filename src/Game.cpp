@@ -357,6 +357,7 @@ namespace Game
 
     void init()
     {
+        render.setRenderRes({Window::width, Window::height});
         render.init();
 
         initFramebuffer();

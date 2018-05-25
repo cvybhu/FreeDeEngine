@@ -311,4 +311,6 @@ void main()
     else
         bloomColor = vec4(0, 0, 0, 1);
     */
+
+    fragColor = texture(diffTexture, In.texCoords).rgba;
 }
