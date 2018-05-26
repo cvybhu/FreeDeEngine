@@ -14,7 +14,7 @@ class Renderer
 {
 public:
     Renderer();
-    void init(int maxSpritesNum);
+    void init(glm::ivec2 renderResolution, int maxSpritesNum);
 
     void setRenderRes(glm::ivec2 newRenderRes);
     void setBloomRes(glm::ivec2 newBloomRes);
@@ -25,7 +25,7 @@ public:
     PointLight* addPointLight();
     void removePointLight(PointLight* light);
 
-    void draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
+    void draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix);
 
     CubeTexture* currentSkybox = nullptr;
     float exposure = 0.5;
@@ -46,6 +46,8 @@ private:
         GLuint color; //RGBA16F
         GLuint bloom; //RGBA16F
         GLuint depth; //32F
+
+        GLenum renderTargets[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1}; //main and bloom
     } mainFbuff;
 
     struct
@@ -66,10 +68,11 @@ private:
     {
         Shader main;
         Shader skybox;
+        Shader justColor;
         Shader postProcess;
-        Shader bloomBlur;
-        Shader showTBN;
-        Shader basic;
+        Shader gausBlur;
+        //Shader showTBN;
+        //Shader basic;
         Shader pointLightShadow;
         Shader dirLightShadow;
     } shaders;
@@ -102,9 +105,10 @@ private:
     //Drawing
     void setupMeshForDraw(const Mesh& mesh);
     void drawMesh(Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader);
-    void drawSkybox(glm::mat4& view, glm::mat4& projection);
+    void drawSkybox(const glm::mat4& view, const glm::mat4& projection);
     void loadPointLights2Shader();
     void loadDirLight2Shader();
+    void doBloom();
 
     //Data storage
     FixedSizeMemPool<Sprite3D> spritePool;

@@ -1,6 +1,6 @@
 #version 330 core
 
-#define MAX_POINT_LIGHTS_NUM 2
+#define MAX_POINT_LIGHTS_NUM 3
 #define MAX_SHADOW_POINT_LIGHTS 2
 
 struct PointLight {
@@ -35,7 +35,7 @@ in VS_OUT
 
 
 layout (location = 0) out vec4 fragColor;
-//layout (location = 1) out vec4 bloomColor;
+layout (location = 1) out vec4 bloomColor;
 
 
 uniform sampler2D diffTexture;
@@ -325,14 +325,14 @@ void main()
 
     fragColor *= texture(ambientOccTex, texCoords).r;
 
-    /*
+    
     float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
 
     if(brightness > bloomMinBright)
         bloomColor = fragColor;
     else
         bloomColor = vec4(0, 0, 0, 1);
-    */
+    
 
     //fragColor = vec4(vec3(texture(dirLightShadow, texCoords).r), 1);
 //    fragColor = vec4(vec3(PointShadowFact(shadowPointLights[0], shadowPointDepth[0], 100.f)), 1);
