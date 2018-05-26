@@ -25,14 +25,13 @@ public:
     PointLight* addPointLight();
     void removePointLight(PointLight* light);
 
-    DirLight* addDirLight();
-    void removeDirLight(DirLight* light);
-
     void draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
 
     CubeTexture* currentSkybox = nullptr;
     float exposure = 0.5;
     float bloomMinBrightness = 1.0;
+
+    DirLight dirLight;
 
 private:
     //Resolution
@@ -72,6 +71,7 @@ private:
         Shader showTBN;
         Shader basic;
         Shader pointLightShadow;
+        Shader dirLightShadow;
     } shaders;
 
     void setupShaders();
@@ -104,6 +104,7 @@ private:
     void drawMesh(Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader);
     void drawSkybox(glm::mat4& view, glm::mat4& projection);
     void loadPointLights2Shader();
+    void loadDirLight2Shader();
 
     //Data storage
     FixedSizeMemPool<Sprite3D> spritePool;
@@ -111,7 +112,4 @@ private:
 
     FixedSizeMemPool<PointLight> pointLightPool;
     std::vector<PointLight*> pointLights;
-
-    FixedSizeMemPool<DirLight> dirLightPool;
-    std::vector<DirLight*> dirLightsPool;
 };

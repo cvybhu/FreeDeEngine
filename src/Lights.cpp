@@ -33,7 +33,7 @@ void PointLight::setupShadowRendering(Shader& shader)
     glViewport(0, 0, shadow.resolution, shadow.resolution);
     glClear(GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
 
 
     float aspect = 1.f;
@@ -50,4 +50,76 @@ void PointLight::setupShadowRendering(Shader& shader)
 
     shader.setVec3("lightPos", pos);
     shader.set1Float("farPlane", shadow.farPlane);
+}
+
+//void PointLight::destroyShadow(){}
+
+void PointLight::activateShadow()
+{
+    shadow.active = true;
+}
+
+void PointLight::deactivateShadow()
+{
+    shadow.active = false;
+}
+
+
+
+void DirLight::setupShadow(glm::vec2 viewSize, glm::vec3 center, float farPlane, glm::ivec2 resolution)
+{
+    shadow.resolution = resolution;
+    shadow.center = center;
+    shadow.farPlane = farPlane;
+    shadow.viewSize = viewSize;
+
+    glGenFramebuffers(1, &shadow.fbuff);
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbuff);
+
+    glGenTextures(1, &shadow.depth);
+    glBindTexture(GL_TEXTURE_2D, shadow.depth);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow.resolution.x, shadow.resolution.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow.depth, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+}
+
+
+void DirLight::setupShadowRendering(Shader& shader)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbuff);
+    glViewport(0, 0, shadow.resolution.x, shadow.resolution.y);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    shader.setMat4("lightTrans", getLightSpaceMat());
+}
+
+
+glm::mat4 DirLight::getLightSpaceMat()
+{
+    float near = 0.1f;
+
+    glm::mat4 lightProjection = glm::ortho(-shadow.viewSize.x/2, shadow.viewSize.x/2, -shadow.viewSize.y/2, shadow.viewSize.y/2, near, shadow.farPlane);
+
+    glm::vec3 side = glm::cross(dir, glm::vec3(0, 0, 1));
+    glm::vec3 up = glm::cross(side, dir);
+    if(up.z < 0)up = -up;
+
+    glm::mat4 lightView = glm::lookAt(shadow.center - dir*shadow.farPlane/2.f, shadow.center, up);
+
+    return lightProjection * lightView;
+}
+
+
+void DirLight::activateShadow()
+{
+    shadow.active = true;
 }

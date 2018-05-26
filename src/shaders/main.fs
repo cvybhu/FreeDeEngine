@@ -1,6 +1,6 @@
 #version 330 core
 
-#define MAX_POINT_LIGHTS_NUM 5
+#define MAX_POINT_LIGHTS_NUM 2
 #define MAX_SHADOW_POINT_LIGHTS 2
 
 struct PointLight {
@@ -30,7 +30,7 @@ in VS_OUT
     vec3 fragPosTan;
     vec3 viewPosTan;
     vec3 viewPos;
-    //vec4 fragPosDirLightSpace;
+    vec4 fragPosDirLightSpace;
 } In;
 
 
@@ -57,13 +57,8 @@ uniform int shadowPointLightsNum;
 
 
 uniform DirLight dirLight;
-
-/*
 uniform sampler2D dirLightShadow;
-
-uniform PointLight shadowPointLight;
-uniform float shadowPLFarPlane;
-*/
+uniform int isDirShadowActive;
 
 uniform float bloomMinBright;
 
@@ -136,26 +131,6 @@ float PointShadowFact(PointLight light, samplerCube depthMap, float farPlane)
     return shadow;
 }
 
-/*
-
-vec3 calculateDirLight(DirLight light, vec3 normal, vec2 texCoords)
-{
-    vec3 lightDir = normalize(In.TBN * - light.dir);
-    vec3 viewDir = normalize(In.viewPosTan - In.fragPosTan);
-
-    // diffuse
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = light.color * diff * texture(diffTexture, texCoords).rgb;
-
-    // specular
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), 32);
-
-    vec3 specular = light.color * spec * specularity * texture(specTexture, texCoords).rgb;
-
-    return (diffuse + specular);
-}
-*/
 
 vec3 calcPointLights(vec3 normal, vec2 texCoords)
 {
@@ -183,7 +158,31 @@ vec3 calcPointLights(vec3 normal, vec2 texCoords)
 }
 
 
-/*
+
+
+
+
+vec3 calculateDirLight(DirLight light, vec3 normal, vec2 texCoords)
+{
+    vec3 lightDir = normalize(In.TBN * - light.dir);
+    vec3 viewDir = normalize(In.viewPosTan - In.fragPosTan);
+
+    // diffuse
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = light.color * diff * texture(diffTexture, texCoords).rgb;
+
+    // specular
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), 32);
+
+    vec3 specular = light.color * spec * specularity * texture(specTexture, texCoords).rgb;
+
+    return (diffuse + specular);
+}
+
+
+
+
 float dirLightShadowFact()
 {
     // perform perspective divide
@@ -215,8 +214,6 @@ float dirLightShadowFact()
 
     return res;
 }
-
-*/
 
 
 vec2 parallaxMaping()
@@ -318,7 +315,12 @@ void main()
 
     result += calcPointLights(normal, texCoords);
 
-    //result += (1.0 - dirLightShadowFact()) * calculateDirLight(dirLight, normal, texCoords);
+
+    if(isDirShadowActive == 1)
+        result += (1.0 - dirLightShadowFact()) * calculateDirLight(dirLight, normal, texCoords);
+    else
+        result += calculateDirLight(dirLight, normal, texCoords);
+
     fragColor = vec4(result, 1);
 
     fragColor *= texture(ambientOccTex, texCoords).r;
@@ -332,5 +334,6 @@ void main()
         bloomColor = vec4(0, 0, 0, 1);
     */
 
+    //fragColor = vec4(vec3(texture(dirLightShadow, texCoords).r), 1);
 //    fragColor = vec4(vec3(PointShadowFact(shadowPointLights[0], shadowPointDepth[0], 100.f)), 1);
 }

@@ -25,12 +25,15 @@ public:
     void activateShadow();
     void deactivateShadow();
 
-//private:
-    friend Renderer;
 
+private:
+    friend Renderer;
     struct
     {
         bool active = false;
+
+        friend PointLight;
+        friend Renderer;
 
         int resolution;
 
@@ -49,5 +52,32 @@ struct DirLight
     glm::vec3 color;
 
     glm::vec3 dir;
+
+
+    void setupShadow(glm::vec2 viewSize, glm::vec3 center, float farPlane = 100.f, glm::ivec2 resolution = {1024, 1024});
+    void destroyShadow();
+
+    void activateShadow();
+    void deactivateShadow();
+
+private:
+    friend Renderer;
+
+    struct 
+    {
+        bool active = false;
+
+        glm::ivec2 resolution;
+
+        GLuint fbuff;
+        GLuint depth;
+
+        float farPlane;
+        glm::vec2 viewSize;
+        glm::vec3 center;
+    } shadow;
+
+    void setupShadowRendering(Shader& shader);
+    glm::mat4 getLightSpaceMat();
 };
 

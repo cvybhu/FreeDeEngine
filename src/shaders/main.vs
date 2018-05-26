@@ -13,26 +13,23 @@ out VS_OUT
     vec3 fragPosTan;
     vec3 viewPosTan;
     vec3 viewPos;
-    //vec4 fragPosDirLightSpace;
+    vec4 fragPosDirLightSpace;
 } Out;
 
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-//uniform mat4 dirLightSpace;
+uniform mat4 dirLightSpace;
 
 uniform vec3 viewPos;
 
 void main()
 {
-    mat3 normModel = mat3(transpose(inverse(model)));
-
     Out.fragPos = vec3(model * vec4(pos, 1.0));
-    //Out.normal = normModel * normalIn;
     Out.texCoords = texCoordsIn;
 
-    //Out.fragPosDirLightSpace = dirLightSpace * vec4(Out.fragPos, 1);
+    Out.fragPosDirLightSpace = dirLightSpace * vec4(Out.fragPos, 1);
 
     vec3 T = normalize(vec3(model * vec4(tangent,   0.0)));
     vec3 N = normalize(vec3(model * vec4(normalIn,   0.0)));

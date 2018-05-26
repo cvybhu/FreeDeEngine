@@ -11,6 +11,7 @@ Renderer::Renderer()
 {
     renderRes = {800, 600};
     bloomRes = renderRes;
+    dirLight.color = {0, 0, 0};
 }
 
 void Renderer::init(int maxSpritesNum)
@@ -42,9 +43,9 @@ void Renderer::setupShaders()
     shaders.main.set1Int("normalTexture", 2);
     shaders.main.set1Int("dispTex", 3);
     shaders.main.set1Int("ambientOccTex", 4);
-    shaders.main.set1Float("bloomMinBright", bloomMinBrightness);
-    shaders.main.set1Int("shadowPointDepth[0]", 5);
-    shaders.main.set1Int("shadowPointDepth[1]", 6);
+    shaders.main.set1Int("dirLightShadow", 5);
+    shaders.main.set1Int("shadowPointDepth[0]", 6);
+    shaders.main.set1Int("shadowPointDepth[1]", 7);
 
     /*
     shaders.main.set1Int("dirLightShadow", 5);
@@ -68,6 +69,9 @@ void Renderer::setupShaders()
 
 //point light shadows
     shaders.pointLightShadow = Storage::getShader("src/shaders/pointLightShadow");
+
+//dir light shadows
+    shaders.dirLightShadow = Storage::getShader("src/shaders/dirLightShadow");
 
 //Postprocess
     shaders.postProcess = Storage::getShader("src/shaders/postProcess");
@@ -289,6 +293,29 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
     glm::vec3 viewPos = glm::vec4(0, 0, 0, 1) * transpose(inverse(viewMatrix));
 
 
+    //Dir Light shadow
+    if(dirLight.shadow.active)
+    {
+        shaders.dirLightShadow.use();
+
+        dirLight.setupShadowRendering(shaders.dirLightShadow);
+        glActiveTexture(GL_TEXTURE0);
+
+        for(Sprite3D* sprite : sprites)
+        {
+            if(sprite->myMesh->diffTex != nullptr)
+                glBindTexture(GL_TEXTURE_2D, sprite->myMesh->diffTex->glIndx);
+            else
+                glBindTexture(GL_TEXTURE_2D, defaultTexs.color);
+
+            glBindVertexArray(sprite->myMesh->VAO);
+
+            shaders.dirLightShadow.setMat4("model", sprite->model);
+            glDrawArrays(GL_TRIANGLES, 0, sprite->myMesh->vertsNum);   
+        }
+    }
+
+
     //Point light shadows
     shaders.pointLightShadow.use();
 
@@ -318,6 +345,7 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
     glViewport(0, 0, renderRes.x, renderRes.y);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 
     //Skybox
     if(currentSkybox != nullptr)
@@ -329,8 +357,14 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
     shaders.main.setMat4("projection", projectionMatrix);
     shaders.main.setVec3("viewPos", viewPos);
 
-
     loadPointLights2Shader();
+    loadDirLight2Shader();
+
+    if(dirLight.shadow.active)
+        shaders.main.setMat4("dirLightSpace", dirLight.getLightSpaceMat());
+
+    shaders.main.set1Float("bloomMinBright", bloomMinBrightness);
+
 
 
     Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
@@ -355,6 +389,7 @@ void Renderer::draw(glm::mat4& viewMatrix, glm::mat4& projectionMatrix)
     shaders.postProcess.use();
     shaders.postProcess.set1Float("exposure", 0.5);
     glActiveTexture(GL_TEXTURE0);
+    //glBindTexture(GL_TEXTURE_2D, dirLight.shadow.depth);
     glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
 
     glBindVertexArray(screenQuad.VAO);
@@ -407,7 +442,7 @@ void Renderer::loadPointLights2Shader()
             shaders.main.set1Float(("shadowPointLights[" + indexAsString + "].linear").c_str(), light->linear);
             shaders.main.set1Float(("shadowPointLights[" + indexAsString + "].quadratic").c_str(), light->quadratic);
 
-            glActiveTexture(GL_TEXTURE5 + shadowPointLightsNum);
+            glActiveTexture(GL_TEXTURE6 + shadowPointLightsNum);
             glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadow.cubeMap);
 
             shaders.main.set1Float(("shadowPointFarPlanes[" + indexAsString + "]").c_str(), light->shadow.farPlane);
@@ -422,6 +457,18 @@ void Renderer::loadPointLights2Shader()
     //std::cout << "shadowsNum: " << shadowPointLightsNum << '\n';
 }
 
+void Renderer::loadDirLight2Shader()
+{
+    shaders.main.setVec3("dirLight.color", dirLight.color);
+    shaders.main.setVec3("dirLight.dir", dirLight.dir);
+    shaders.main.set1Int("isDirShadowActive", dirLight.shadow.active ? 1 : 0);
+
+    if(dirLight.shadow.active)
+    {
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_2D, dirLight.shadow.depth);
+    }
+}
 
 void Renderer::setRenderRes(glm::ivec2 newRenderRes)
 {
