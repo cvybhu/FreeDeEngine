@@ -9,6 +9,7 @@
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 #include <Camera.hpp>
 #include <Logger.hpp>
@@ -355,6 +356,8 @@ namespace Game
     }
 
     Sprite3D* plane;
+    PointLight *shadowedLight;
+
 
     void init()
     {
@@ -394,9 +397,9 @@ namespace Game
         light2->linear = 0.07f;
         light2->quadratic = 0.04f;
 
-        PointLight* shadowedLight = render.addPointLight();
+        shadowedLight = render.addPointLight();
 
-        shadowedLight->pos = glm::vec3(20.5, -1, -1);
+        shadowedLight->pos = glm::vec3(20.5, -1, -1) + glm::vec3(3, 0, 0);
         shadowedLight->color = glm::vec3(2.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
         shadowedLight->constant = 1.f;
         shadowedLight->linear = 0.1f;
@@ -442,6 +445,12 @@ namespace Game
         cam.handleMovement(deltaTime);
 
         exposureTesting(deltaTime);
+
+        auto centr = glm::vec3(20.5, -1, -1);
+
+        auto curVec = shadowedLight->pos - centr;
+        curVec = glm::rotate(curVec, deltaTime, glm::vec3(0, 0, 1));
+        shadowedLight->pos = centr + curVec;
 
         if(Window::isPressed(GLFW_KEY_P))
             std::cout << "Camera pos: (" << cam.pos.x << ' ' << cam.pos.y << ' ' << cam.pos.z << "\n";

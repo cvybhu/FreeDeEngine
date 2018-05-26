@@ -52,6 +52,7 @@ uniform int pointLightsNum;
 
 uniform PointLight shadowPointLights[MAX_SHADOW_POINT_LIGHTS];
 uniform samplerCube shadowPointDepth[MAX_SHADOW_POINT_LIGHTS];
+uniform float shadowPointFarPlanes[MAX_SHADOW_POINT_LIGHTS];
 uniform int shadowPointLightsNum;
 
 
@@ -94,6 +95,47 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec2 texCoords)
 
     return (diffuse + specular) * attenuation;
 }
+
+
+float PointShadowFact(PointLight light, samplerCube depthMap, float farPlane)
+{
+    // get vector between fragment position and light position
+    vec3 fragToLight = In.fragPos - light.pos;
+    // use the light to fragment vector to sample from the depth map
+    float closestDepth = texture(depthMap, fragToLight).r;
+    // it is currently in linear range between [0,1]. Re-transform back to original value
+    closestDepth *= farPlane; //farPlane
+    // now get current linear depth as the length between the fragment and light position
+    float currentDepth = length(fragToLight);
+    // now test for shadows
+    float bias = 0.3;
+    //float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+
+    vec3 sampleOffsetDirections[20] = vec3[]
+    (
+        vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1),
+        vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+        vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+        vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+        vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+    );
+
+    float shadow = 0.0;
+    int samples  = 20;
+    float viewDistance = length(viewPos - In.fragPos);
+    float diskRadius = 0.05;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(depthMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+        closestDepth *= farPlane;   // Undo mapping [0;1]
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);
+
+    return shadow;
+}
+
 /*
 
 vec3 calculateDirLight(DirLight light, vec3 normal, vec2 texCoords)
@@ -125,6 +167,16 @@ vec3 calcPointLights(vec3 normal, vec2 texCoords)
             break;
 
         result += calculatePointLight(pointLights[l], normal, texCoords);
+    }
+
+    for(int l = 0; l < MAX_SHADOW_POINT_LIGHTS; l++)
+    {
+        if(shadowPointLightsNum == l)
+            break;
+
+        result += 
+        (1.0 - PointShadowFact(shadowPointLights[l], shadowPointDepth[l], shadowPointFarPlanes[l]))
+                         * calculatePointLight(shadowPointLights[l], normal, texCoords);
     }
 
     return result;
@@ -165,44 +217,6 @@ float dirLightShadowFact()
 }
 
 */
-float PointShadowFact(PointLight light, samplerCube depthMap)
-{
-    // get vector between fragment position and light position
-    vec3 fragToLight = In.fragPos - light.pos;
-    // use the light to fragment vector to sample from the depth map
-    float closestDepth = texture(depthMap, fragToLight).r;
-    // it is currently in linear range between [0,1]. Re-transform back to original value
-    closestDepth *= 100.f; //farPlane
-    // now get current linear depth as the length between the fragment and light position
-    float currentDepth = length(fragToLight);
-    // now test for shadows
-    float bias = 0.03;
-    //float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
-
-    vec3 sampleOffsetDirections[20] = vec3[]
-    (
-        vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1),
-        vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
-        vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
-        vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
-        vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
-    );
-
-    float shadow = 0.0;
-    int samples  = 20;
-    float viewDistance = length(viewPos - In.fragPos);
-    float diskRadius = 0.05;
-    for(int i = 0; i < samples; ++i)
-    {
-        float closestDepth = texture(depthMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
-        closestDepth *= 100.f;   // Undo mapping [0;1]
-        if(currentDepth - bias > closestDepth)
-            shadow += 1.0;
-    }
-    shadow /= float(samples);
-
-    return shadow;
-}
 
 
 vec2 parallaxMaping()
@@ -288,15 +302,13 @@ bool parallaxMap = true;
 
 void main()
 {
-    vec2 texCoords;
+    vec2 texCoords = In.texCoords;
 
     if(parallaxMap)
          texCoords = parallaxMaping();
-    else
-        texCoords = In.texCoords;
 
-    if(texture(diffTexture, texCoords).a < 0.01)
-        discard;
+    //if(texture(diffTexture, texCoords).a < 0.01)
+        //discard;
 
     vec3 result = ambientLight * texture(diffTexture, texCoords).rgb;
 
@@ -306,7 +318,6 @@ void main()
 
     result += calcPointLights(normal, texCoords);
 
-    result += (1.0 - PointShadowFact(shadowPointLights[0], shadowPointDepth[0])) * calculatePointLight(shadowPointLights[0], normal, texCoords);
     //result += (1.0 - dirLightShadowFact()) * calculateDirLight(dirLight, normal, texCoords);
     fragColor = vec4(result, 1);
 
@@ -321,5 +332,5 @@ void main()
         bloomColor = vec4(0, 0, 0, 1);
     */
 
-    //fragColor = vec4(vec3(texture(dispTex, In.texCoords).r), 1);
+//    fragColor = vec4(vec3(PointShadowFact(shadowPointLights[0], shadowPointDepth[0], 100.f)), 1);
 }

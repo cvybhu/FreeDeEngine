@@ -410,11 +410,16 @@ void Renderer::loadPointLights2Shader()
             glActiveTexture(GL_TEXTURE5 + shadowPointLightsNum);
             glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadow.cubeMap);
 
+            shaders.main.set1Float(("shadowPointFarPlanes[" + indexAsString + "]").c_str(), light->shadow.farPlane);
+
             shadowPointLightsNum++;
         }
 
     shaders.main.set1Int("pointLightsNum", pointLightsNum);
     shaders.main.set1Int("shadowPointLightsNum", shadowPointLightsNum);
+
+    //std::cout << "pointLightsNum: " << pointLightsNum << '\n';
+    //std::cout << "shadowsNum: " << shadowPointLightsNum << '\n';
 }
 
 

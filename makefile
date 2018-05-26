@@ -4,7 +4,8 @@ BUILD_DIR ?= .
 SRC_DIRS ?= ./src
 
 DEFS := -DGLM_ENABLE_EXPERIMENTAL -DGLFW_INCLUDE_NONE
-CXXFLAGS := $(DEFS) -std=c++17 -Wall -Wshadow -O3 -Wfatal-errors
+DEBFAGS = -fsanitize=undefined -fsanitize=address -O0
+CXXFLAGS := $(DEFS) -std=c++17 -Wall -Wshadow -Wfatal-errors -O3
 LDFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 INCLUDE_DIRS := -I./include  -I./scr
 

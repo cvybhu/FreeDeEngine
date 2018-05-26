@@ -30,7 +30,7 @@ public:
 
     struct
     {
-        bool active;
+        bool active = false;
 
         int resolution;
 
