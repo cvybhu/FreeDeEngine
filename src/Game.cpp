@@ -59,18 +59,25 @@ namespace Game
 
 
         shadowedLight = render.addPointLight();
-
         shadowedLight->pos = glm::vec3(20.5, -1, -1) + glm::vec3(3, 0, 0);
         shadowedLight->color = glm::vec3(2.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
         shadowedLight->constant = 1.f;
         shadowedLight->linear = 0.1f;
         shadowedLight->quadratic = 0.03f;
-
         shadowedLight->setupShadow(1024, 100.f);
         shadowedLight->activateShadow();
 
+        PointLight* shadowedLight2 = render.addPointLight();
+        shadowedLight2->pos = glm::vec3(2, -5, 3);
+        shadowedLight2->color = glm::vec3(40.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
+        shadowedLight2->constant = 1.f;
+        shadowedLight2->linear = 0.1f;
+        shadowedLight2->quadratic = 0.03f;
+        shadowedLight2->setupShadow(1024, 100.f);
+        shadowedLight2->activateShadow();
 
-        render.dirLight.color = glm::vec3(glm::vec2(0.5), 0.4) * 5.f;
+
+        render.dirLight.color = glm::vec3(glm::vec2(0.5), 0.4) * 0.f;
         render.dirLight.dir = glm::vec3(0, -1, -1);
 
         render.dirLight.setupShadow({50, 50}, {7, 0, 0}, 100.f, {1024, 1024});

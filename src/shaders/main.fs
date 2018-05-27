@@ -60,6 +60,7 @@ layout (std140) uniform lightData
 layout (location = 0) out vec4 fragColor;
 layout (location = 1) out vec4 bloomColor;
 
+uniform samplerCube shadowPointDepth[MAX_SHADOW_POINT_LIGHTS];
 
 uniform sampler2D diffTexture;
 uniform sampler2D specTexture;
@@ -70,7 +71,6 @@ uniform sampler2D ambientOccTex;
 
 uniform sampler2D dirLightShadow;
 
-uniform samplerCube shadowPointDepth[MAX_SHADOW_POINT_LIGHTS];
 
 
 

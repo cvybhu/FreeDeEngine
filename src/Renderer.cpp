@@ -401,6 +401,24 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     //Main render
     shaders.main.use();
 
+
+    if(dirLight.shadow.active)
+    {
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_2D, dirLight.shadow.depth);
+    }
+
+    auto curPointShadowTexture = GL_TEXTURE6;
+
+    for(PointLight* light : pointLights)
+    {
+        if(light->shadow.active)
+        {
+            glActiveTexture(curPointShadowTexture++);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadow.cubeMap);
+        }
+    }
+
     for(Sprite3D* sprite : sprites)
     {
         setupMeshForDraw(*sprite->myMesh);
@@ -468,7 +486,8 @@ void Renderer::drawSkybox(const glm::mat4& viewMatrix, const glm::mat4& projecti
     glDepthMask(GL_FALSE);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
+    //glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, pointLights[3]->shadow.cubeMap);
 
     glBindVertexArray(skyboxCube.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -494,16 +513,11 @@ void Renderer::loadPointLights2Shader()
         }
         else
         {
-            std::string&& indexAsString = convert2String(shadowPointLightsNum);
-
             mainLightData.shadowPointLights[shadowPointLightsNum].pos = light->pos;
             mainLightData.shadowPointLights[shadowPointLightsNum].color = light->color;
             mainLightData.shadowPointLights[shadowPointLightsNum].constant = light->constant;
             mainLightData.shadowPointLights[shadowPointLightsNum].linear = light->linear;
             mainLightData.shadowPointLights[shadowPointLightsNum].quadratic = light->quadratic;
-
-            glActiveTexture(GL_TEXTURE6 + shadowPointLightsNum);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadow.cubeMap);
 
             mainLightData.shadowPointFarPlanes[shadowPointLightsNum] = light->shadow.farPlane;
 
