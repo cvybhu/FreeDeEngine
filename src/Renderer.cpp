@@ -26,13 +26,20 @@ void Renderer::init(glm::ivec2 renderResolution, int maxSpritesNum)
 
 void Renderer::setupShaders()
 {
+//UBOs
+    glGenBuffers(1, &shaderPosDataUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, shaderPosDataUBO);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, shaderPosDataUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(ShaderPosData), NULL, GL_DYNAMIC_DRAW);
+        
+    glGenBuffers(1, &mainLightDataUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, mainLightDataUBO);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mainLightDataUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(MainShaderLightData), NULL, GL_DYNAMIC_DRAW);
+
 //Main
     shaders.main = Storage::getShader("src/shaders/main");
-
-
     shaders.main.use();
-    shaders.main.setVec3("ambientLight", glm::vec3(0.03));
-
     shaders.main.set1Int("diffTexture", 0);
     shaders.main.set1Int("specTexture", 1);
     shaders.main.set1Int("normalTexture", 2);
@@ -42,11 +49,20 @@ void Renderer::setupShaders()
     shaders.main.set1Int("shadowPointDepth[0]", 6);
     shaders.main.set1Int("shadowPointDepth[1]", 7);
 
+    shaders.main.setUBO("posData", 0);
+    shaders.main.setUBO("lightData", 1);
+
+
 //Skybox
     shaders.skybox = Storage::getShader("src/shaders/skybox");
+    shaders.skybox.use();
+    shaders.skybox.setUBO("posData", 0);
 
 //justColor
     shaders.justColor = Storage::getShader("src/shaders/justColorMTR");
+    shaders.justColor.use();
+    shaders.justColor.setUBO("posData", 0);
+    shaders.justColor.setUBO("lightData", 1);
 
 //point light shadows
     shaders.pointLightShadow = Storage::getShader("src/shaders/pointLightShadow");
@@ -272,6 +288,19 @@ void Renderer::drawMesh(Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader
 }
 
 
+void Renderer::loadUBOs()
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, shaderPosDataUBO);
+    GLvoid* uboDataPtr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    memcpy(uboDataPtr, &shaderPosData, sizeof(ShaderPosData));
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, mainLightDataUBO);
+    uboDataPtr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    memcpy(uboDataPtr, &mainLightData, sizeof(MainShaderLightData));
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+}
+
 void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
 {
     glm::vec3 viewPos = glm::vec4(0, 0, 0, 1) * transpose(inverse(viewMatrix));
@@ -323,6 +352,20 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
             }
         }
 
+    //UBOs
+    shaderPosData.view = viewMatrix;
+    shaderPosData.projection = projectionMatrix;
+    shaderPosData.projView = projectionMatrix * viewMatrix;
+    shaderPosData.viewPos = viewPos;
+
+    loadPointLights2Shader();
+    loadDirLight2Shader();
+
+    if(dirLight.shadow.active)
+        shaderPosData.dirLightSpace = dirLight.getLightSpaceMat();
+
+    mainLightData.bloomMinBright = bloomMinBrightness;
+    loadUBOs();
 
 //Main framebuffer setup
     glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
@@ -338,13 +381,11 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
         drawSkybox(viewMatrix, projectionMatrix);
 
 
-    glDrawBuffers(2, mainFbuff.renderTargets); //color & bloom
 
+    glDrawBuffers(2, mainFbuff.renderTargets); //color & bloom
 
     //Drawing pointLights
     shaders.justColor.use();
-    shaders.justColor.setMat4("projView", projectionMatrix * viewMatrix);
-    shaders.justColor.set1Float("bloomMinBright", bloomMinBrightness);
 
     Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
     glBindVertexArray(lightMesh.VAO);
@@ -359,17 +400,6 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
     //Main render
     shaders.main.use();
-    shaders.main.setMat4("view", viewMatrix);
-    shaders.main.setMat4("projection", projectionMatrix);
-    shaders.main.setVec3("viewPos", viewPos);
-
-    loadPointLights2Shader();
-    loadDirLight2Shader();
-
-    if(dirLight.shadow.active)
-        shaders.main.setMat4("dirLightSpace", dirLight.getLightSpaceMat());
-
-    shaders.main.set1Float("bloomMinBright", bloomMinBrightness);
 
     for(Sprite3D* sprite : sprites)
     {
@@ -389,7 +419,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
 
     shaders.postProcess.use();
-    shaders.postProcess.set1Float("exposure", 0.5);
+    shaders.postProcess.set1Float("exposure", exposure);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
     //glBindTexture(GL_TEXTURE_2D, dirLight.shadow.depth);
@@ -401,7 +431,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 }
 
 void Renderer::doBloom()
-{
+{   
     int passes = 2;
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mainFbuff.index);
@@ -433,8 +463,6 @@ void Renderer::doBloom()
 void Renderer::drawSkybox(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
 {
     shaders.skybox.use();
-    shaders.skybox.setMat4("view", glm::mat3(viewMatrix));
-    shaders.skybox.setMat4("projection", projectionMatrix);
     shaders.skybox.set1Float("exposure", exposure);
 
     glDepthMask(GL_FALSE);
@@ -456,13 +484,11 @@ void Renderer::loadPointLights2Shader()
     for(PointLight* light : pointLights)
         if(!light->shadow.active)
         {
-            std::string&& indexAsString = convert2String(pointLightsNum);
-
-            shaders.main.setVec3(("pointLights[" + indexAsString + "].pos").c_str(), light->pos);
-            shaders.main.setVec3(("pointLights[" + indexAsString + "].color").c_str(), light->color);
-            shaders.main.set1Float(("pointLights[" + indexAsString + "].constant").c_str(), light->constant);
-            shaders.main.set1Float(("pointLights[" + indexAsString + "].linear").c_str(), light->linear);
-            shaders.main.set1Float(("pointLights[" + indexAsString + "].quadratic").c_str(), light->quadratic);
+            mainLightData.pointLights[pointLightsNum].pos = light->pos;
+            mainLightData.pointLights[pointLightsNum].color = light->color;
+            mainLightData.pointLights[pointLightsNum].constant = light->constant;
+            mainLightData.pointLights[pointLightsNum].linear = light->linear;
+            mainLightData.pointLights[pointLightsNum].quadratic = light->quadratic;
 
             pointLightsNum++;
         }
@@ -470,22 +496,22 @@ void Renderer::loadPointLights2Shader()
         {
             std::string&& indexAsString = convert2String(shadowPointLightsNum);
 
-            shaders.main.setVec3(("shadowPointLights[" + indexAsString + "].pos").c_str(), light->pos);
-            shaders.main.setVec3(("shadowPointLights[" + indexAsString + "].color").c_str(), light->color);
-            shaders.main.set1Float(("shadowPointLights[" + indexAsString + "].constant").c_str(), light->constant);
-            shaders.main.set1Float(("shadowPointLights[" + indexAsString + "].linear").c_str(), light->linear);
-            shaders.main.set1Float(("shadowPointLights[" + indexAsString + "].quadratic").c_str(), light->quadratic);
+            mainLightData.shadowPointLights[shadowPointLightsNum].pos = light->pos;
+            mainLightData.shadowPointLights[shadowPointLightsNum].color = light->color;
+            mainLightData.shadowPointLights[shadowPointLightsNum].constant = light->constant;
+            mainLightData.shadowPointLights[shadowPointLightsNum].linear = light->linear;
+            mainLightData.shadowPointLights[shadowPointLightsNum].quadratic = light->quadratic;
 
             glActiveTexture(GL_TEXTURE6 + shadowPointLightsNum);
             glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadow.cubeMap);
 
-            shaders.main.set1Float(("shadowPointFarPlanes[" + indexAsString + "]").c_str(), light->shadow.farPlane);
+            mainLightData.shadowPointFarPlanes[shadowPointLightsNum] = light->shadow.farPlane;
 
             shadowPointLightsNum++;
         }
 
-    shaders.main.set1Int("pointLightsNum", pointLightsNum);
-    shaders.main.set1Int("shadowPointLightsNum", shadowPointLightsNum);
+    mainLightData.pointLightsNum = pointLightsNum;
+    mainLightData.shadowPointLightsNum = shadowPointLightsNum;
 
     //std::cout << "pointLightsNum: " << pointLightsNum << '\n';
     //std::cout << "shadowsNum: " << shadowPointLightsNum << '\n';
@@ -493,9 +519,9 @@ void Renderer::loadPointLights2Shader()
 
 void Renderer::loadDirLight2Shader()
 {
-    shaders.main.setVec3("dirLight.color", dirLight.color);
-    shaders.main.setVec3("dirLight.dir", dirLight.dir);
-    shaders.main.set1Int("isDirShadowActive", dirLight.shadow.active ? 1 : 0);
+    mainLightData.dirLight.color = dirLight.color;
+    mainLightData.dirLight.dir = dirLight.dir;
+    mainLightData.isDirShadowActive = (dirLight.shadow.active ? 1 : 0);
 
     if(dirLight.shadow.active)
     {
@@ -541,3 +567,10 @@ void Renderer::removePointLight(PointLight* light)
     delete light;
 }
 
+
+void Renderer::vec3_16::operator=(const glm::vec3& v)
+{
+    x = v.x;
+    y = v.y;
+    z = v.z;
+}

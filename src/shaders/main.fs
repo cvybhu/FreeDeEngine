@@ -1,6 +1,6 @@
 #version 330 core
 
-#define MAX_POINT_LIGHTS_NUM 3
+#define MAX_POINT_LIGHTS_NUM 10
 #define MAX_SHADOW_POINT_LIGHTS 2
 
 struct PointLight {
@@ -29,9 +29,32 @@ in VS_OUT
     mat3 TBN;
     vec3 fragPosTan;
     vec3 viewPosTan;
-    vec3 viewPos;
     vec4 fragPosDirLightSpace;
 } In;
+
+layout (std140) uniform posData
+{
+    mat4 view;
+    mat4 projection;
+    mat4 projView;
+    mat4 dirLightSpace;
+    vec3 viewPos;
+};
+
+
+layout (std140) uniform lightData
+{
+    vec3 ambientLight; float _padding; //4f
+    int pointLightsNum;
+    int shadowPointLightsNum;
+    int isDirShadowActive;
+    float bloomMinBright; //4f?
+
+    PointLight pointLights[MAX_POINT_LIGHTS_NUM]; //n*4f
+    PointLight shadowPointLights[MAX_SHADOW_POINT_LIGHTS]; //n*4f
+    DirLight dirLight; //4f
+    float shadowPointFarPlanes[MAX_SHADOW_POINT_LIGHTS]; //n*f (!)
+};
 
 
 layout (location = 0) out vec4 fragColor;
@@ -44,23 +67,12 @@ uniform sampler2D normalTexture;
 uniform sampler2D dispTex;
 uniform sampler2D ambientOccTex;
 
-uniform vec3 ambientLight;
-uniform vec3 viewPos;
 
-uniform PointLight pointLights[MAX_POINT_LIGHTS_NUM];
-uniform int pointLightsNum;
-
-uniform PointLight shadowPointLights[MAX_SHADOW_POINT_LIGHTS];
-uniform samplerCube shadowPointDepth[MAX_SHADOW_POINT_LIGHTS];
-uniform float shadowPointFarPlanes[MAX_SHADOW_POINT_LIGHTS];
-uniform int shadowPointLightsNum;
-
-
-uniform DirLight dirLight;
 uniform sampler2D dirLightShadow;
-uniform int isDirShadowActive;
 
-uniform float bloomMinBright;
+uniform samplerCube shadowPointDepth[MAX_SHADOW_POINT_LIGHTS];
+
+
 
 
 float shininess = 32.0f;
@@ -336,4 +348,5 @@ void main()
 
     //fragColor = vec4(vec3(texture(dirLightShadow, texCoords).r), 1);
 //    fragColor = vec4(vec3(PointShadowFact(shadowPointLights[0], shadowPointDepth[0], 100.f)), 1);
+    //fragColor = vec4(color, 1);
 }

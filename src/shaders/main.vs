@@ -12,17 +12,20 @@ out VS_OUT
     mat3 TBN;
     vec3 fragPosTan;
     vec3 viewPosTan;
-    vec3 viewPos;
     vec4 fragPosDirLightSpace;
 } Out;
 
+layout (std140) uniform posData
+{
+    mat4 view;
+    mat4 projection;
+    mat4 projView;
+    mat4 dirLightSpace;
+    vec3 viewPos;
+};
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-uniform mat4 dirLightSpace;
 
-uniform vec3 viewPos;
 
 void main()
 {

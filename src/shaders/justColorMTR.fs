@@ -4,7 +4,22 @@ layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 bloomColor;
 
 uniform vec3 color;
-uniform float bloomMinBright;
+
+layout (std140) uniform lightData
+{
+    vec3 ambientLight; float _padding; //4f
+    int pointLightsNum;
+    int shadowPointLightsNum;
+    int isDirShadowActive;
+    float bloomMinBright; //4f?
+
+    /*
+    PointLight pointLights[MAX_POINT_LIGHTS_NUM]; //n*4f
+    PointLight shadowPointLights[MAX_SHADOW_POINT_LIGHTS]; //n*4f
+    DirLight dirLight; //4f
+    float shadowPointFarPlanes[MAX_SHADOW_POINT_LIGHTS]; //n*f (!)
+    */
+};
 
 void main()
 {

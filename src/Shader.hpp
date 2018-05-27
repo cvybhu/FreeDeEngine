@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
+#include <vector>
 
 struct Shader   //loads and compiles openGL shader. has cool methods to send data to uniforms
 {
@@ -31,4 +32,6 @@ struct Shader   //loads and compiles openGL shader. has cool methods to send dat
     void setVec4(const char* name, glm::vec4 vec) {glUniform4f(glGetUniformLocation(program, name), vec.x, vec.y, vec.z, vec.w);}
 
     void setMat4(const char* name, const glm::mat4& theMat) { glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, glm::value_ptr(theMat));}
+
+    void setUBO(const char* name, GLuint uboBindingPoint) { glUniformBlockBinding(program, glGetUniformBlockIndex(program, name), uboBindingPoint);}
 };

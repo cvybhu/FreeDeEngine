@@ -1,3 +1,6 @@
+#define MAX_POINT_LIGHTS_NUM 10
+#define MAX_SHADOW_POINT_LIGHTS 2
+
 #pragma once
 
 #include <glad/glad.h>
@@ -77,6 +80,61 @@ private:
         Shader dirLightShadow;
     } shaders;
 
+    struct vec3_16
+    {
+        float x, y, z;
+        float _padding;
+
+        void operator=(const glm::vec3& v);
+    };
+
+
+    struct ShaderPosData   //UBO #0
+    {
+        glm::mat4 view;
+        glm::mat4 projection;
+        glm::mat4 projView;
+        glm::mat4 dirLightSpace;
+        vec3_16 viewPos;
+    };
+
+    ShaderPosData shaderPosData;
+    GLuint shaderPosDataUBO;
+
+    struct MainShaderLightData //UBO #1
+    {
+        struct PointLight{
+            vec3_16 pos; //4f
+            vec3_16 color; //4f
+            float constant;
+            float linear;
+            float quadratic;
+            float padding2; //4f
+        };
+
+        struct DirLight{
+            vec3_16 color; //4f
+            vec3_16 dir; //4f
+        };
+
+
+        vec3_16 ambientLight; //4f
+        int pointLightsNum;
+        int shadowPointLightsNum;
+        int isDirShadowActive;
+        float bloomMinBright; //4f
+
+        PointLight pointLights[MAX_POINT_LIGHTS_NUM]; //n*4f
+        PointLight shadowPointLights[MAX_SHADOW_POINT_LIGHTS]; //n*4f
+        DirLight dirLight; //4f
+        float shadowPointFarPlanes[MAX_SHADOW_POINT_LIGHTS]; //n*f (!)
+    };
+
+    MainShaderLightData mainLightData;
+    GLuint mainLightDataUBO;
+
+
+
     void setupShaders();
 
 
@@ -109,6 +167,7 @@ private:
     void loadPointLights2Shader();
     void loadDirLight2Shader();
     void doBloom();
+    void loadUBOs();
 
     //Data storage
     FixedSizeMemPool<Sprite3D> spritePool;
