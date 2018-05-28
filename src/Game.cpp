@@ -22,6 +22,7 @@ namespace Game
 
     Sprite3D* plane;
     PointLight *shadowedLight;
+    PointLight* shadowedLight2;
 
 
     void init()
@@ -67,9 +68,9 @@ namespace Game
         shadowedLight->setupShadow(1024, 100.f);
         shadowedLight->activateShadow();
 
-        PointLight* shadowedLight2 = render.addPointLight();
+        shadowedLight2 = render.addPointLight();
         shadowedLight2->pos = glm::vec3(2, -5, 3);
-        shadowedLight2->color = glm::vec3(40.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
+        shadowedLight2->color = glm::vec3(4.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
         shadowedLight2->constant = 1.f;
         shadowedLight2->linear = 0.1f;
         shadowedLight2->quadratic = 0.03f;
@@ -77,7 +78,7 @@ namespace Game
         shadowedLight2->activateShadow();
 
 
-        render.dirLight.color = glm::vec3(glm::vec2(0.5), 0.4) * 0.f;
+        render.dirLight.color = glm::vec3(glm::vec2(0.5), 0.4) * 2.f;
         render.dirLight.dir = glm::vec3(0, -1, -1);
 
         render.dirLight.setupShadow({50, 50}, {7, 0, 0}, 100.f, {1024, 1024});
@@ -135,6 +136,9 @@ namespace Game
         auto curVec = shadowedLight->pos - centr;
         curVec = glm::rotate(curVec, deltaTime, glm::vec3(0, 0, 1));
         shadowedLight->pos = centr + curVec;
+
+        //shadowedLight2->pos += sin(glfwGetTime()) *0.01;
+
 
         if(Window::isPressed(GLFW_KEY_P))
             std::cout << "Camera pos: (" << cam.pos.x << ' ' << cam.pos.y << ' ' << cam.pos.z << "\n";

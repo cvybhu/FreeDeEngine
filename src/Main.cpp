@@ -10,9 +10,12 @@ using namespace std;
 
 
 
+#define showOgl(a) GLint xDD##a; glGetIntegerv(a, &xDD##a); std::cout << #a << ": " << xDD##a << '\n';
+
 
 int main()
 {
+
     //Initialization and asset loading
     double loadStartTime = glfwGetTime();
 
@@ -43,9 +46,21 @@ int main()
 
     std::cout<<"LOAD AND INIT TIME: "<< (glfwGetTime() - loadStartTime)*1000<<"ms\n";
 
+
+    showOgl(GL_MAX_VERTEX_IMAGE_UNIFORMS);
+    showOgl(GL_MAX_GEOMETRY_IMAGE_UNIFORMS);
+    showOgl(GL_MAX_FRAGMENT_IMAGE_UNIFORMS);
+    showOgl(GL_MAX_COMPUTE_IMAGE_UNIFORMS);
+
     //Game loop
     double lastFrameTime = glfwGetTime();
     double deltaTime = 0;
+
+    GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR) {
+        std::cout << "OpenGL error: " << err << '\n';
+        }
+
 
     TimeTeller frameTimeTeller("frame time", 1.5);
     TimeTeller renderTimeTeller("render time", 1.5);

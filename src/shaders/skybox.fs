@@ -10,7 +10,7 @@ uniform float exposure;
 
 void main()
 {
-    FragColor = texture(skybox, TexCoords);
+    FragColor = texture(skybox, TexCoords).rgba;
 
     //exposure corection lol
     FragColor = log(1 - FragColor) / -exposure;

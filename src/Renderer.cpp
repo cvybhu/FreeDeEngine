@@ -414,10 +414,13 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     {
         if(light->shadow.active)
         {
-            glActiveTexture(curPointShadowTexture++);
+            glActiveTexture(curPointShadowTexture);
             glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadow.cubeMap);
+
+            curPointShadowTexture ++;
         }
     }
+    
 
     for(Sprite3D* sprite : sprites)
     {
@@ -486,8 +489,7 @@ void Renderer::drawSkybox(const glm::mat4& viewMatrix, const glm::mat4& projecti
     glDepthMask(GL_FALSE);
 
     glActiveTexture(GL_TEXTURE0);
-    //glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, pointLights[3]->shadow.cubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
 
     glBindVertexArray(skyboxCube.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);

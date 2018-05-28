@@ -88,6 +88,14 @@ private:
         void operator=(const glm::vec3& v);
     };
 
+    struct float_16
+    {
+        float val;
+        float _padding[3];
+
+        void operator=(const float& f){val = f;};
+    };
+
 
     struct ShaderPosData   //UBO #0
     {
@@ -127,7 +135,7 @@ private:
         PointLight pointLights[MAX_POINT_LIGHTS_NUM]; //n*4f
         PointLight shadowPointLights[MAX_SHADOW_POINT_LIGHTS]; //n*4f
         DirLight dirLight; //4f
-        float shadowPointFarPlanes[MAX_SHADOW_POINT_LIGHTS]; //n*f (!)
+        float_16 shadowPointFarPlanes[MAX_SHADOW_POINT_LIGHTS]; //n*4f
     };
 
     MainShaderLightData mainLightData;
