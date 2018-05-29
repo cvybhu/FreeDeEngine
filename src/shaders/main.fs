@@ -45,12 +45,12 @@ layout (std140) uniform posData
 layout (std140) uniform lightData
 {
     vec3 ambientLight; float _padding; //4f
+    PointLight pointLights[MAX_POINT_LIGHTS_NUM]; //n*4f
     int pointLightsNum;
     int shadowPointLightsNum;
     int isDirShadowActive;
     float bloomMinBright; //4f?
 
-    PointLight pointLights[MAX_POINT_LIGHTS_NUM]; //n*4f
     PointLight shadowPointLights[MAX_SHADOW_POINT_LIGHTS]; //n*4f
     DirLight dirLight; //4f
     vec4 shadowPointFarPlanes[MAX_SHADOW_POINT_LIGHTS]; //n*f (!)

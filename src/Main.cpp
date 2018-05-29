@@ -31,8 +31,7 @@ int main()
         mesh.loadToGPU();
     }
 
-
-    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcess", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow", "src/shaders/showTBN", "src/shaders/gausBlur", "src/shaders/basic", "src/shaders/main", "src/shaders/justColorMTR"};
+    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcess", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow", "src/shaders/showTBN", "src/shaders/gausBlur", "src/shaders/basic", "src/shaders/main", "src/shaders/justColorMTR", "src/shaders/deffered", "src/shaders/defferedLight"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {

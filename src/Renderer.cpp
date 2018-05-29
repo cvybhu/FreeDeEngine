@@ -17,6 +17,7 @@ void Renderer::init(glm::ivec2 renderResolution, int maxSpritesNum)
     renderRes = renderResolution;
     bloomRes = renderRes/4;
     setupShaders();
+    createDeffBuff();
     createMainFramebuff();
     createBloomFramebuffs();
     createDefaultTextures();
@@ -31,32 +32,34 @@ void Renderer::setupShaders()
     glBindBuffer(GL_UNIFORM_BUFFER, shaderPosDataUBO);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, shaderPosDataUBO);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(ShaderPosData), NULL, GL_DYNAMIC_DRAW);
-        
-    glGenBuffers(1, &mainLightDataUBO);
-    glBindBuffer(GL_UNIFORM_BUFFER, mainLightDataUBO);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mainLightDataUBO);
+/*
+    glGenBuffers(1, &lghtDataUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, lightDataUBO);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, lightDataUBO);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(MainShaderLightData), NULL, GL_DYNAMIC_DRAW);
+*/
 
-//Main
-    shaders.main = Storage::getShader("src/shaders/main");
-    shaders.main.use();
-    shaders.main.set1Int("diffTexture", 0);
-    shaders.main.set1Int("specTexture", 1);
-    shaders.main.set1Int("normalTexture", 2);
-    shaders.main.set1Int("dispTex", 3);
-    shaders.main.set1Int("ambientOccTex", 4);
-    shaders.main.set1Int("dirLightShadow", 5);
-    shaders.main.set1Int("shadowPointDepth[0]", 6);
-    shaders.main.set1Int("shadowPointDepth[1]", 7);
+//deffered   
+    shaders.deffered = Storage::getShader("src/shaders/deffered");
+    shaders.deffered.use();
+    shaders.deffered.set1Int("albedoTex", 0);
+    shaders.deffered.set1Int("metallicTex", 1);
+    shaders.deffered.set1Int("roughnessTex", 2);
+    shaders.deffered.set1Int("normalTex", 3);
+    shaders.deffered.set1Int("ambientOccTex", 4);
+    shaders.deffered.set1Int("displacementTex", 5);
+    shaders.deffered.set1Int("emmisionTex", 6);
 
-    shaders.main.setUBO("posData", 0);
-    shaders.main.setUBO("lightData", 1);
+    shaders.deffered.setUBO("posData", 0);
 
+//deffLight
+    shaders.deffLight = Storage::getShader("src/shaders/defferedLight");
+    shaders.deffLight.use();
+    shaders.deffLight.set1Int("albedoMetal", 0);
+    shaders.deffLight.set1Int("posRoughness", 1);
+    shaders.deffLight.set1Int("normalAmbientOcc", 2);
 
-//Skybox
-    shaders.skybox = Storage::getShader("src/shaders/skybox");
-    shaders.skybox.use();
-    shaders.skybox.setUBO("posData", 0);
+    shaders.deffLight.setUBO("posData", 0);
 
 //justColor
     shaders.justColor = Storage::getShader("src/shaders/justColorMTR");
@@ -80,6 +83,34 @@ void Renderer::setupShaders()
     shaders.postProcess.set1Int("bloomTex", 1);
 }
 
+void Renderer::createDeffBuff()
+{
+    glGenFramebuffers(1, &deffBuff.index);
+    glBindFramebuffer(GL_FRAMEBUFFER, deffBuff.index);
+
+    auto createTex = [](GLuint& tex, int attachIndex, glm::ivec2 res){
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, res.x, res.y, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachIndex, GL_TEXTURE_2D, tex, 0);
+    };
+
+    createTex(deffBuff.albedoMetal, 0, renderRes);
+    createTex(deffBuff.posRoughness, 1, renderRes);
+    createTex(deffBuff.normalAmbientOcc, 2, renderRes);
+
+    //Depth rbo
+    glGenRenderbuffers(1, &deffBuff.depth);
+    glBindRenderbuffer(GL_RENDERBUFFER, deffBuff.depth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, renderRes.x, renderRes.y);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, deffBuff.depth);
+}
+
+
 
 void Renderer::createMainFramebuff()
 {
@@ -96,26 +127,6 @@ void Renderer::createMainFramebuff()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mainFbuff.color, 0);
-
-    //Depth rbo
-    glGenRenderbuffers(1, &mainFbuff.depth);
-    glBindRenderbuffer(GL_RENDERBUFFER, mainFbuff.depth);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, renderRes.x, renderRes.y);
-
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mainFbuff.depth);
-
-
-    //Bloom color tex
-    glGenTextures(1, &mainFbuff.bloom);
-    glBindTexture(GL_TEXTURE_2D, mainFbuff.bloom);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, renderRes.x, renderRes.y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, renderRes.x, renderRes.y, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mainFbuff.bloom, 0);
 }
 
 
@@ -245,38 +256,51 @@ void Renderer::createDefaultTextures()
 
 void Renderer::setupMeshForDraw(const Mesh& mesh)
 {
+//Albedo
     glActiveTexture(GL_TEXTURE0);
     if(mesh.diffTex != nullptr)
         glBindTexture(GL_TEXTURE_2D, mesh.diffTex->glIndx);
     else
         glBindTexture(GL_TEXTURE_2D, defaultTexs.color);
 
-
+//Metallic
     glActiveTexture(GL_TEXTURE1);
     if(mesh.specTex != nullptr)
         glBindTexture(GL_TEXTURE_2D, mesh.specTex->glIndx);
     else
         glBindTexture(GL_TEXTURE_2D, defaultTexs.color);
 
+//Roughness
+    glActiveTexture(GL_TEXTURE3);
+    if(mesh.normalTex != nullptr)
+        glBindTexture(GL_TEXTURE_2D, mesh.specTex->glIndx);
+    else
+        glBindTexture(GL_TEXTURE_2D, defaultTexs.color);
 
-    glActiveTexture(GL_TEXTURE2);
+//Normals
+    glActiveTexture(GL_TEXTURE3);
     if(mesh.normalTex != nullptr)
         glBindTexture(GL_TEXTURE_2D, mesh.normalTex->glIndx);
     else
         glBindTexture(GL_TEXTURE_2D, defaultTexs.normal);
 
-
-    glActiveTexture(GL_TEXTURE3);
-    if(mesh.dispTex != nullptr)
-        glBindTexture(GL_TEXTURE_2D, mesh.dispTex->glIndx);
-    else
-        glBindTexture(GL_TEXTURE_2D, defaultTexs.displacement);
-
+//ambientOcc
     glActiveTexture(GL_TEXTURE4);
     if(mesh.ambientOccTex != nullptr)
         glBindTexture(GL_TEXTURE_2D, mesh.ambientOccTex->glIndx);
     else
         glBindTexture(GL_TEXTURE_2D, defaultTexs.ambientOcc);
+
+//displacement
+    glActiveTexture(GL_TEXTURE5);
+    if(mesh.dispTex != nullptr)
+        glBindTexture(GL_TEXTURE_2D, mesh.dispTex->glIndx);
+    else
+        glBindTexture(GL_TEXTURE_2D, defaultTexs.displacement);
+
+//emmsion
+    glActiveTexture(GL_TEXTURE6);
+
 
     glBindVertexArray(mesh.VAO);
 }
@@ -295,16 +319,17 @@ void Renderer::loadUBOs()
     memcpy(uboDataPtr, &shaderPosData, sizeof(ShaderPosData));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, mainLightDataUBO);
+    /*glBindBuffer(GL_UNIFORM_BUFFER, mainLightDataUBO);
     uboDataPtr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
     memcpy(uboDataPtr, &mainLightData, sizeof(MainShaderLightData));
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glUnmapBuffer(GL_UNIFORM_BUFFER);*/
 }
 
 void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
 {
     glm::vec3 viewPos = glm::vec4(0, 0, 0, 1) * transpose(inverse(viewMatrix));
 
+/*
 //Shadows
     //Dir Light shadow
     if(dirLight.shadow.active)
@@ -351,22 +376,32 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
                 glDrawArrays(GL_TRIANGLES, 0, sprite->myMesh->vertsNum);
             }
         }
-
+*/
     //UBOs
     shaderPosData.view = viewMatrix;
     shaderPosData.projection = projectionMatrix;
     shaderPosData.projView = projectionMatrix * viewMatrix;
     shaderPosData.viewPos = viewPos;
 
-    loadPointLights2Shader();
-    loadDirLight2Shader();
-
-    if(dirLight.shadow.active)
-        shaderPosData.dirLightSpace = dirLight.getLightSpaceMat();
-
-    mainLightData.bloomMinBright = bloomMinBrightness;
     loadUBOs();
 
+    glBindFramebuffer(GL_FRAMEBUFFER, deffBuff.index);
+    glViewport(0, 0, renderRes.x, renderRes.y);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+
+    glDrawBuffers(3, deffBuff.renderTargets);
+
+    shaders.deffered.use();
+
+    for(Sprite3D* sprite : sprites)
+    {
+        setupMeshForDraw(*sprite->myMesh);
+        drawMesh(*sprite->myMesh, sprite->model, shaders.deffered);
+    }
+
+/*
 //Main framebuffer setup
     glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
     glViewport(0, 0, renderRes.x, renderRes.y);
@@ -428,22 +463,43 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
         drawMesh(*sprite->myMesh, sprite->model, shaders.main);
     }
 
-
+*/
 //Post processing
     //Bloom
-    doBloom();
+    //doBloom();
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
+    //glViewport(0, 0, renderRes.x, renderRes.y);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
+
+    glDrawBuffers(1, mainFbuff.renderTargets); //only color
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, deffBuff.albedoMetal);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, deffBuff.posRoughness);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, deffBuff.normalAmbientOcc);
+
+    shaders.deffLight.use();
+    glBindVertexArray(screenQuad.VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+    //here will be bloom 
+
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, Window::width, Window::height);
     glClear(GL_COLOR_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
-
+    //glDisable(GL_DEPTH_TEST);
 
     shaders.postProcess.use();
     shaders.postProcess.set1Float("exposure", exposure);
     glActiveTexture(GL_TEXTURE0);
+    //glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
     glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
-    //glBindTexture(GL_TEXTURE_2D, dirLight.shadow.depth);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);
 
@@ -501,7 +557,7 @@ void Renderer::loadPointLights2Shader()
 {
     int pointLightsNum = 0;
     int shadowPointLightsNum = 0;
-
+    /*
     for(PointLight* light : pointLights)
         if(!light->shadow.active)
         {
@@ -528,21 +584,21 @@ void Renderer::loadPointLights2Shader()
 
     mainLightData.pointLightsNum = pointLightsNum;
     mainLightData.shadowPointLightsNum = shadowPointLightsNum;
-
+    */
     //std::cout << "pointLightsNum: " << pointLightsNum << '\n';
     //std::cout << "shadowsNum: " << shadowPointLightsNum << '\n';
 }
 
 void Renderer::loadDirLight2Shader()
 {
-    mainLightData.dirLight.color = dirLight.color;
-    mainLightData.dirLight.dir = dirLight.dir;
-    mainLightData.isDirShadowActive = (dirLight.shadow.active ? 1 : 0);
+    //mainLightData.dirLight.color = dirLight.color;
+    //mainLightData.dirLight.dir = dirLight.dir;
+    //mainLightData.isDirShadowActive = (dirLight.shadow.active ? 1 : 0);
 
     if(dirLight.shadow.active)
     {
-        glActiveTexture(GL_TEXTURE5);
-        glBindTexture(GL_TEXTURE_2D, dirLight.shadow.depth);
+        //glActiveTexture(GL_TEXTURE5);
+        //glBindTexture(GL_TEXTURE_2D, dirLight.shadow.depth);
     }
 }
 

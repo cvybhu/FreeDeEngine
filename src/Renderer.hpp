@@ -37,34 +37,47 @@ public:
     DirLight dirLight;
 
 private:
-    //Resolution
+//Resolution
     glm::ivec2 renderRes;
     glm::ivec2 bloomRes;
 
+//Framebuffs
+    //deffered buffer (G-Buffer)
+    struct 
+    {
+        GLuint index;
+        GLuint albedoMetal; //vec3 albedo + float metallic - RGBA16F
+        GLuint posRoughness; //vec3 pos + float roughness - RGBA16F
+        GLuint normalAmbientOcc; //vec3 normal + float ambientOcc - RGBA16F
+        GLuint depth; //32F renderbuffer
 
-    //Framebuffs
+        GLenum renderTargets[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+
+    } deffBuff;
+
+    //here go light calculations
     struct
     {
         GLuint index;
         GLuint color; //RGBA16F
-        GLuint bloom; //RGBA16F
-        GLuint depth; //32F
 
-        GLenum renderTargets[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1}; //main and bloom
+        GLenum renderTargets[1] = {GL_COLOR_ATTACHMENT0};
     } mainFbuff;
 
+    //bloom gaus blur buffs
     struct
     {
         GLuint index;
         GLuint color;   //RGBA16F
     } bloomFbuffs[2];
 
+    void createDeffBuff();
     void createMainFramebuff();
     void createBloomFramebuffs();
 
+    void deleteDeffBuff();
     void deleteMainFramebuff();
     void deleteBloomFramebuffs();
-
 
     //Shaders
     struct
@@ -78,6 +91,8 @@ private:
         //Shader basic;
         Shader pointLightShadow;
         Shader dirLightShadow;
+        Shader deffered;
+        Shader deffLight;
     } shaders;
 
     struct vec3_16
@@ -108,39 +123,6 @@ private:
 
     ShaderPosData shaderPosData;
     GLuint shaderPosDataUBO;
-
-    struct MainShaderLightData //UBO #1
-    {
-        struct PointLight{
-            vec3_16 pos; //4f
-            vec3_16 color; //4f
-            float constant;
-            float linear;
-            float quadratic;
-            float padding2; //4f
-        };
-
-        struct DirLight{
-            vec3_16 color; //4f
-            vec3_16 dir; //4f
-        };
-
-
-        vec3_16 ambientLight; //4f
-        int pointLightsNum;
-        int shadowPointLightsNum;
-        int isDirShadowActive;
-        float bloomMinBright; //4f
-
-        PointLight pointLights[MAX_POINT_LIGHTS_NUM]; //n*4f
-        PointLight shadowPointLights[MAX_SHADOW_POINT_LIGHTS]; //n*4f
-        DirLight dirLight; //4f
-        float_16 shadowPointFarPlanes[MAX_SHADOW_POINT_LIGHTS]; //n*4f
-    };
-
-    MainShaderLightData mainLightData;
-    GLuint mainLightDataUBO;
-
 
 
     void setupShaders();
