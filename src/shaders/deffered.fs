@@ -34,6 +34,6 @@ void main()
 
     vec3 normal = In.TBN * vec3(0, 0, 1);//texture(normalTex, texCoords).rgb;
 
-    normalAmbientOcc.rgb = normal;
+    normalAmbientOcc.rgb = normalize(normal);
     normalAmbientOcc.a = texture(ambientOccTex, texCoords).r;
 }

@@ -177,13 +177,13 @@ void Mesh::loadToGPU()
     glBindVertexArray(0);
 
 
-    auto checkNLoad = [](Texture* tex)
+    auto checkNLoad = [](Texture* tex, bool fixGamma = false)
     {
         if(tex != nullptr && !tex->isOnGPU)
-            tex->loadToGPU();
+            tex->loadToGPU(fixGamma);
     };
 
-    checkNLoad(albedoTex);
+    checkNLoad(albedoTex, true);
     checkNLoad(metallicTex);
     checkNLoad(roughnessTex);
     checkNLoad(normalTex);

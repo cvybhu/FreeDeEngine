@@ -44,17 +44,17 @@ namespace Game
 
         PointLight* light0 = render.addPointLight();
         light0->pos = {2, 2, 2};
-        light0->color = {0.5, 0.5, 0};
+        light0->color = {0.5, 0.5, 0}; light0->color *= 10;
         Sprite3D* light0sprite = render.addSprite3D(Storage::getMesh("mesh/light.obj"));
         light0sprite->model = glm::scale(glm::translate(glm::mat4(1), glm::vec3(light0->pos)), glm::vec3(0.3));
 
         PointLight* light1 = render.addPointLight();
         light1->pos = {-3, -3, 4};
-        light1->color = {0, 0.5, 0.5};
+        light1->color = {0, 0.5, 0.5}; light1->color *= 10.f;
         Sprite3D* light1sprite = render.addSprite3D(Storage::getMesh("mesh/light.obj"));
         light1sprite->model = glm::scale(glm::translate(glm::mat4(1), glm::vec3(light1->pos)), glm::vec3(0.3));
 
-        render.dirLight.color = glm::vec3(glm::vec2(0.5), 0.4) * 2.f;
+        render.dirLight.color = glm::vec3(glm::vec2(0.5), 0.4) * 3.f;
         render.dirLight.dir = glm::vec3(0, -1, -1);
 
         //render.dirLight.setupShadow({50, 50}, {7, 0, 0}, 100.f, {1024, 1024});
