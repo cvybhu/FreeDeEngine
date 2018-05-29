@@ -22,7 +22,8 @@ int main()
     Window::init();
 
 
-    const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj", "mesh/particle.obj", "mesh/pointShadowTest.obj"};
+    //const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj", "mesh/particle.obj", "mesh/pointShadowTest.obj"};
+    const char* meshes2Load[] = {"mesh/pbrCube.obj", "mesh/light.obj"};
 
     for(unsigned i = 0; i < sizeof(meshes2Load)/sizeof(const char*); i++)
     {

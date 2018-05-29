@@ -31,21 +31,36 @@ void Texture::loadToGPU(bool fixGamma)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    if(nrChannels == 3)
+    GLenum types[2];
+
+    switch(nrChannels)
     {
-        if(fixGamma)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        else
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    }
-    else
-    {
-        if(fixGamma)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        else
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    case 1:{
+        types[0] = GL_R8;
+        types[1] = GL_RED;
+        break;
     }
 
+    case 2:{
+        types[0] = GL_RG8;
+        types[1] = GL_RG;
+        break;
+    }
+
+    case 3:{
+        types[0] = fixGamma ? GL_SRGB8 : GL_RGB8;
+        types[1] = GL_RGB;
+        break;
+    }
+
+    case 4:{
+        types[0] = fixGamma ? GL_SRGB8_ALPHA8 : GL_RGBA8;
+        types[1] = GL_RGBA;
+        break;
+    }
+    };
+
+    glTexImage2D(GL_TEXTURE_2D, 0, types[0], width, height, 0, types[1], GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     isOnGPU = true;

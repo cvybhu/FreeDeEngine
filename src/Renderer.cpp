@@ -247,7 +247,9 @@ GLuint Renderer::create1x1Texture(glm::ivec3 color)
 
 void Renderer::createDefaultTextures()
 {
-    defaultTexs.color = create1x1Texture({128, 128, 128});
+    defaultTexs.albedo = create1x1Texture({128, 128, 128});
+    defaultTexs.metallic = create1x1Texture({0, 0, 0});
+    defaultTexs.roughness = create1x1Texture({128, 128, 128});
     defaultTexs.normal = create1x1Texture({128, 128, 255});
     defaultTexs.displacement = create1x1Texture({0, 0, 0});
     defaultTexs.ambientOcc = create1x1Texture({255, 255, 255});
@@ -256,26 +258,31 @@ void Renderer::createDefaultTextures()
 
 void Renderer::setupMeshForDraw(const Mesh& mesh)
 {
+
 //Albedo
     glActiveTexture(GL_TEXTURE0);
-    if(mesh.diffTex != nullptr)
-        glBindTexture(GL_TEXTURE_2D, mesh.diffTex->glIndx);
+    if(mesh.albedoTex != nullptr)
+        glBindTexture(GL_TEXTURE_2D, mesh.albedoTex->glIndx);
     else
-        glBindTexture(GL_TEXTURE_2D, defaultTexs.color);
+    {
+        glBindTexture(GL_TEXTURE_2D, defaultTexs.albedo);
+        //std::cout << "No albedo!!\n";
+
+    }
 
 //Metallic
     glActiveTexture(GL_TEXTURE1);
-    if(mesh.specTex != nullptr)
-        glBindTexture(GL_TEXTURE_2D, mesh.specTex->glIndx);
+    if(mesh.metallicTex != nullptr)
+        glBindTexture(GL_TEXTURE_2D, mesh.metallicTex->glIndx);
     else
-        glBindTexture(GL_TEXTURE_2D, defaultTexs.color);
+        glBindTexture(GL_TEXTURE_2D, defaultTexs.metallic);
 
 //Roughness
-    glActiveTexture(GL_TEXTURE3);
-    if(mesh.normalTex != nullptr)
-        glBindTexture(GL_TEXTURE_2D, mesh.specTex->glIndx);
+    glActiveTexture(GL_TEXTURE2);
+    if(mesh.roughnessTex != nullptr)
+        glBindTexture(GL_TEXTURE_2D, mesh.roughnessTex->glIndx);
     else
-        glBindTexture(GL_TEXTURE_2D, defaultTexs.color);
+        glBindTexture(GL_TEXTURE_2D, defaultTexs.roughness);
 
 //Normals
     glActiveTexture(GL_TEXTURE3);
@@ -293,8 +300,8 @@ void Renderer::setupMeshForDraw(const Mesh& mesh)
 
 //displacement
     glActiveTexture(GL_TEXTURE5);
-    if(mesh.dispTex != nullptr)
-        glBindTexture(GL_TEXTURE_2D, mesh.dispTex->glIndx);
+    if(mesh.displacementTex != nullptr)
+        glBindTexture(GL_TEXTURE_2D, mesh.displacementTex->glIndx);
     else
         glBindTexture(GL_TEXTURE_2D, defaultTexs.displacement);
 
@@ -401,73 +408,8 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
         drawMesh(*sprite->myMesh, sprite->model, shaders.deffered);
     }
 
-/*
-//Main framebuffer setup
-    glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
-    glViewport(0, 0, renderRes.x, renderRes.y);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
 
-    glDrawBuffers(1, mainFbuff.renderTargets); //only color no bloom
-
-    //Skybox
-    if(currentSkybox != nullptr)
-        drawSkybox(viewMatrix, projectionMatrix);
-
-
-
-    glDrawBuffers(2, mainFbuff.renderTargets); //color & bloom
-
-    //Drawing pointLights
-    shaders.justColor.use();
-
-    Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
-    glBindVertexArray(lightMesh.VAO);
-
-    for(PointLight* light : pointLights)
-    {
-        shaders.justColor.setMat4("model", glm::scale(glm::translate(glm::mat4(1), light->pos), glm::vec3(0.7)));
-        shaders.justColor.setVec3("color", light->color);
-        glDrawArrays(GL_TRIANGLES, 0, lightMesh.vertsNum);
-    }
-
-
-    //Main render
-    shaders.main.use();
-
-
-    if(dirLight.shadow.active)
-    {
-        glActiveTexture(GL_TEXTURE5);
-        glBindTexture(GL_TEXTURE_2D, dirLight.shadow.depth);
-    }
-
-    auto curPointShadowTexture = GL_TEXTURE6;
-
-    for(PointLight* light : pointLights)
-    {
-        if(light->shadow.active)
-        {
-            glActiveTexture(curPointShadowTexture);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadow.cubeMap);
-
-            curPointShadowTexture ++;
-        }
-    }
-    
-
-    for(Sprite3D* sprite : sprites)
-    {
-        setupMeshForDraw(*sprite->myMesh);
-        drawMesh(*sprite->myMesh, sprite->model, shaders.main);
-    }
-
-*/
-//Post processing
-    //Bloom
-    //doBloom();
-    
+//Light    
     glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
     //glViewport(0, 0, renderRes.x, renderRes.y);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -483,13 +425,26 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glBindTexture(GL_TEXTURE_2D, deffBuff.normalAmbientOcc);
 
     shaders.deffLight.use();
+
+    //quick lighting solution to test PBR - gotta do it completely another deffered way
+    shaders.deffLight.setVec3("dirLight.color", dirLight.color);
+    shaders.deffLight.setVec3("dirLight.dir", dirLight.dir);
+    shaders.deffLight.setVec3("pointLights[0].color", pointLights[0]->color);
+    shaders.deffLight.setVec3("pointLights[0].pos", pointLights[0]->pos);
+    shaders.deffLight.setVec3("pointLights[1].color", pointLights[1]->color);
+    shaders.deffLight.setVec3("pointLights[1].pos", pointLights[1]->pos);
+
+
     glBindVertexArray(screenQuad.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
     //here will be bloom 
+    //Bloom
+    //doBloom();
 
 
+//Post processing
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, Window::width, Window::height);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -498,7 +453,6 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     shaders.postProcess.use();
     shaders.postProcess.set1Float("exposure", exposure);
     glActiveTexture(GL_TEXTURE0);
-    //glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
     glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);

@@ -14,11 +14,13 @@ struct Mesh //holds vertex data and pointers to used textures from global storag
     void unloadFromRAM();
     void unloadFromGPU();
 
-    Texture* diffTex;
-    Texture* specTex;
-    Texture* normalTex; 
-    Texture* dispTex; //displacement (parallax occlusion)
-    Texture* ambientOccTex;
+    Texture* albedoTex = nullptr;
+    Texture* metallicTex = nullptr; 
+    Texture* roughnessTex = nullptr;
+    Texture* normalTex = nullptr;
+    Texture* ambientOccTex = nullptr;
+    Texture* displacementTex = nullptr;
+    Texture* emmisionTex = nullptr;
 
     struct Vertex
     {

@@ -140,7 +140,9 @@ private:
     //Default textures
     struct
     {
-        GLuint color; //diff & specular
+        GLuint albedo;
+        GLuint metallic;
+        GLuint roughness;
         GLuint normal;
         GLuint displacement;
         GLuint ambientOcc;

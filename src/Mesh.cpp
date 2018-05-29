@@ -40,12 +40,19 @@ void Mesh::loadToRAM(const char* filePath)
     std::vector<glm::vec3> vecNormals;
     std::vector<glm::vec2> texCoords;
 
-    specTex = nullptr;
-    normalTex = nullptr;
+    auto loadTex = [&file](Texture*& tex){
+        std::string texPath;
+        file >> texPath;
+        tex = &Storage::getTex(texPath.c_str());
+
+        if(!tex->isOnRAM)
+            tex->loadToRAM(texPath.c_str());
+    };
+
 
     while(file >> input)
     {
-        if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "diffTex" && input != "specTex" && input != "normalTex" && input != "dispTex" && input != "ambientOccTex")
+        if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "albedoTex" && input != "metalTex" && input != "roughTex" && input != "normTex" && input != "ambientOccTex")
             continue;
 
         if(input == "v")
@@ -92,72 +99,36 @@ void Mesh::loadToRAM(const char* filePath)
             continue;
         }
 
-        if(input == "diffTex")
+        if(input == "albedoTex")
         {
-            std::string texPath;
-            file >> texPath;
-
-            diffTex = &Storage::getTex(texPath.c_str());
-
-            if(!diffTex->isOnRAM)
-                diffTex->loadToRAM(texPath.c_str());
-
+            loadTex(albedoTex);
             continue;
         }
 
-        if(input == "specTex")
+        if(input == "metalTex")
         {
-            std::string texPath;
-            file >> texPath;
-
-            specTex = &Storage::getTex(texPath.c_str());
-
-            if(!specTex->isOnRAM)
-                specTex->loadToRAM(texPath.c_str());
-
+            loadTex(metallicTex);
             continue;
         }
 
-        if(input == "normalTex")
-        {   
-            std::string texPath;
-            file >> texPath;
-
-            normalTex = &Storage::getTex(texPath.c_str());
-
-            if(!normalTex->isOnRAM)
-                normalTex->loadToRAM(texPath.c_str());
-
+        if(input == "roughTex")
+        {
+            loadTex(roughnessTex);
             continue;
         }
 
-        if(input == "dispTex")
+        if(input == "normTex")
         {
-            std::string texPath;
-            file >> texPath;
-
-            dispTex = &Storage::getTex(texPath.c_str());
-
-            if(!dispTex->isOnRAM)
-                dispTex->loadToRAM(texPath.c_str());
-
+            loadTex(normalTex);
             continue;
-        }   
+        }
 
         if(input == "ambientOccTex")
         {
-            std::string texPath;
-            file >> texPath;
-
-            ambientOccTex = &Storage::getTex(texPath.c_str());
-
-            if(!ambientOccTex->isOnRAM)
-                ambientOccTex->loadToRAM(texPath.c_str());
+            loadTex(ambientOccTex);
+            continue;
         }
     }
-
-    if(specTex == nullptr)
-        specTex = diffTex;
 
     file.close();
 
@@ -205,21 +176,22 @@ void Mesh::loadToGPU()
 
     glBindVertexArray(0);
 
-    if(diffTex != nullptr && !diffTex->isOnGPU)
-        diffTex->loadToGPU(true);
 
-    if(specTex != nullptr && !specTex->isOnGPU)
-        specTex->loadToGPU();
+    auto checkNLoad = [](Texture* tex)
+    {
+        if(tex != nullptr && !tex->isOnGPU)
+            tex->loadToGPU();
+    };
 
-    if(normalTex != nullptr && !normalTex->isOnGPU)
-        normalTex->loadToGPU();
-
-    if(dispTex != nullptr && !dispTex->isOnGPU)
-        dispTex->loadToGPU();
-
-    if(ambientOccTex != nullptr && !ambientOccTex->isOnGPU)
-        ambientOccTex->loadToGPU();
+    checkNLoad(albedoTex);
+    checkNLoad(metallicTex);
+    checkNLoad(roughnessTex);
+    checkNLoad(normalTex);
+    checkNLoad(ambientOccTex);
+    checkNLoad(displacementTex);
+    checkNLoad(emmisionTex);
 }
+
 
 void Mesh::unloadFromGPU()
 {

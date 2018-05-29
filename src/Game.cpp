@@ -27,6 +27,8 @@ namespace Game
 
     void init()
     {
+        cam.pos = {0, 4, 0};
+
         render.init({Window::width, Window::height}, 10);
         render.bloomMinBrightness = 1.5;
 
@@ -35,54 +37,28 @@ namespace Game
         skyboxMountLake.loadToGPU(true);
         render.currentSkybox = &skyboxMountLake;
 
-        plane = render.addSprite3D(Storage::getMesh("mesh/spacePlane.obj"));
-        plane->model = glm::rotate(glm::translate(glm::mat4(1), glm::vec3(4, -4, 2)), (float)glfwGetTime(), glm::vec3(0, 0, 1));
+    
 
-        Sprite3D* stonePlace = render.addSprite3D(Storage::getMesh("mesh/stonePlace.obj"));
-        stonePlace->model = glm::translate(glm::mat4(1), glm::vec3(0, -12, 0));
+        Sprite3D* pbrCube = render.addSprite3D(Storage::getMesh("mesh/pbrCube.obj"));
+        pbrCube->model = glm::mat4(1);
 
-        Sprite3D* pointShadowTest = render.addSprite3D(Storage::getMesh("mesh/pointShadowTest.obj"));
-        pointShadowTest->model = glm::translate(glm::mat4(1), glm::vec3(20, 0, 0));
+        PointLight* light0 = render.addPointLight();
+        light0->pos = {2, 2, 2};
+        light0->color = {0.5, 0.5, 0};
+        Sprite3D* light0sprite = render.addSprite3D(Storage::getMesh("mesh/light.obj"));
+        light0sprite->model = glm::scale(glm::translate(glm::mat4(1), glm::vec3(light0->pos)), glm::vec3(0.3));
 
-        PointLight* light = render.addPointLight();
-        light->pos = {5, -5, -0.5};
-        light->color = glm::vec3(1.0, 0.2, 0.5); light->color *= 8;
-        light->constant = 1.f;
-        light->linear = 0.5f;
-        light->quadratic = 0.8f;
-
-        PointLight* light2 = render.addPointLight();
-        light2->pos = {-5, -10, 3};
-        light2->color = glm::vec3(0.3, 0.4, 0.9); light2->color *= 4;
-        light2->constant = 1.f;
-        light2->linear = 0.07f;
-        light2->quadratic = 0.04f;
-
-
-        shadowedLight = render.addPointLight();
-        shadowedLight->pos = glm::vec3(20.5, -1, -1) + glm::vec3(3, 0, 0);
-        shadowedLight->color = glm::vec3(2.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
-        shadowedLight->constant = 1.f;
-        shadowedLight->linear = 0.1f;
-        shadowedLight->quadratic = 0.03f;
-        shadowedLight->setupShadow(1024, 100.f);
-        shadowedLight->activateShadow();
-
-        shadowedLight2 = render.addPointLight();
-        shadowedLight2->pos = glm::vec3(2, -5, 3);
-        shadowedLight2->color = glm::vec3(4.8);//glm::vec3(1.0, 0.2, 0.5)*0.8f;
-        shadowedLight2->constant = 1.f;
-        shadowedLight2->linear = 0.1f;
-        shadowedLight2->quadratic = 0.03f;
-        shadowedLight2->setupShadow(1024, 100.f);
-        shadowedLight2->activateShadow();
-
+        PointLight* light1 = render.addPointLight();
+        light1->pos = {-3, -3, 4};
+        light1->color = {0, 0.5, 0.5};
+        Sprite3D* light1sprite = render.addSprite3D(Storage::getMesh("mesh/light.obj"));
+        light1sprite->model = glm::scale(glm::translate(glm::mat4(1), glm::vec3(light1->pos)), glm::vec3(0.3));
 
         render.dirLight.color = glm::vec3(glm::vec2(0.5), 0.4) * 2.f;
         render.dirLight.dir = glm::vec3(0, -1, -1);
 
-        render.dirLight.setupShadow({50, 50}, {7, 0, 0}, 100.f, {1024, 1024});
-        render.dirLight.activateShadow();
+        //render.dirLight.setupShadow({50, 50}, {7, 0, 0}, 100.f, {1024, 1024});
+        //render.dirLight.activateShadow();
     }
 
     void exposureTesting(float deltaTime)
@@ -135,7 +111,7 @@ namespace Game
 
         auto curVec = shadowedLight->pos - centr;
         curVec = glm::rotate(curVec, deltaTime, glm::vec3(0, 0, 1));
-        shadowedLight->pos = centr + curVec;
+        //shadowedLight->pos = centr + curVec;
 
         //shadowedLight2->pos += sin(glfwGetTime()) *0.01;
 
