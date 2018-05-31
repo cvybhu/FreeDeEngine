@@ -40,3 +40,25 @@ struct CubeTexture
     void unloadFromRAM();
     void unloadFromGPU();
 };
+
+struct EnvironmentTex //HDR skybox for IBL
+{
+    EnvironmentTex();
+
+    float* data;
+    int width, height;
+
+    GLuint hdrTex;
+    GLuint cubeMap;
+    GLuint diffRadianceMap;
+
+
+    bool isOnRAM, isOnGPU;
+
+    void loadToRAM(const char* filePath);
+    void loadToGPU();
+    void generateCubeMaps(int resolution);
+
+    void unloadFromRAM();
+    void unloadFromGPU();
+};

@@ -32,8 +32,8 @@ void main()
     posRoughness.rgb = In.fragPos;
     posRoughness.a = texture(roughnessTex, texCoords).r;
 
-    vec3 normal = In.TBN * vec3(0, 0, 1);//texture(normalTex, texCoords).rgb;
-
+    vec3 normal = (texture(normalTex, texCoords).rgb - 0.5)*2;
+    normal = In.TBN * normal;
     normalAmbientOcc.rgb = normalize(normal);
     normalAmbientOcc.a = texture(ambientOccTex, texCoords).r;
 }

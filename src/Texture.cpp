@@ -1,5 +1,12 @@
 #include <Texture.hpp>
+#include <Shader.hpp>
 #include <Logger.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+namespace Storage
+{
+    Shader& getShader(const char*);
+}
 
 
 void Texture::loadToRAM(const char* filePath)
@@ -141,4 +148,195 @@ void CubeTexture::unloadFromGPU()
 
     isOnGPU = false;
 }
+
+
+
+EnvironmentTex::EnvironmentTex()
+{
+    isOnRAM = isOnGPU = false;
+};
+
+void EnvironmentTex::loadToRAM(const char* filePath)
+{
+    stbi_set_flip_vertically_on_load(true);
+    int nrComponents;
+    data = stbi_loadf(filePath,  &width, &height, &nrComponents, 0);
+
+    if (!data)
+        std::cout << "Failed to load "<< filePath << " image." << std::endl;
+};
+
+void EnvironmentTex::loadToGPU()
+{
+    glGenTextures(1, &hdrTex);
+    glBindTexture(GL_TEXTURE_2D, hdrTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+void createCube(GLuint& VAO, GLuint& VBO)
+{
+    float cubeVerts[] = {
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f
+        };
+
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+        glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerts), &cubeVerts, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+}
+
+
+
+void EnvironmentTex::generateCubeMaps(int resolution)
+{
+    GLuint toCubeFbuff;
+    glGenFramebuffers(1, &toCubeFbuff);
+    glBindFramebuffer(GL_FRAMEBUFFER, toCubeFbuff);
+
+    auto generateCubeMap = [](GLuint& tex, int res)
+    {
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
+        for (int i = 0; i < 6; i++)
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA16F, res, res, 0, GL_RGBA, GL_FLOAT, nullptr);
+
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    };
+
+    GLuint cubeVAO, cubeVBO;
+    createCube(cubeVAO, cubeVBO);
+
+    glm::mat4 convertViews[] = 
+    {
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 1, 0, 0), glm::vec3(0, 0, 1)), //+x
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(-1, 0, 0), glm::vec3(0, 0, 1)), //-x
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 0, 0,-1), glm::vec3(0, 1, 0)), //+y
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 0, 0, 1), glm::vec3(0, -1, 0)),  //-y
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 0, 1, 0), glm::vec3(0, 0, 1)), //+z
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 0,-1, 0), glm::vec3(0, 0, 1))  //-z
+    };
+//
+    generateCubeMap(cubeMap, resolution);
+    Shader& convert = Storage::getShader("src/shaders/streched2cube");
+    convert.use();
+    convert.set1Int("theTex", 0);
+    convert.setMat4("projection", glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f));
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, hdrTex);
+
+    glDisable(GL_DEPTH_TEST); 
+    glViewport(0, 0, resolution, resolution);
+    GLenum renderTargets[] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, renderTargets);
+    for (int i = 0; i < 6; i++)
+    {
+        convert.setMat4("view", convertViews[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubeMap, 0);
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Fbuff not complete!!!!!\n";
+
+
+
+
+//
+    //GLuint diffRadFbuff;
+    //glGenFramebuffers(1, &diffRadFbuff);
+    //glBindFramebuffer(GL_FRAMEBUFFER, diffRadFbuff);
+
+    glm::mat4 views[] = 
+    {
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 1, 0, 0), glm::vec3(0,-1, 0)), //+x
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3(-1, 0, 0), glm::vec3(0,-1, 0)), //-x
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 0, 1, 0), glm::vec3(0, 0, 1)), //+y
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 0,-1, 0), glm::vec3(0, 0, -1)),  //-y
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 0, 0, 1), glm::vec3(0,-1, 0)), //+z
+        glm::lookAt(glm::vec3(0, 0, 0), glm::vec3( 0, 0,-1), glm::vec3(0,-1, 0))  //-z
+    };
+
+
+    int diffRadRes = 64;
+
+    generateCubeMap(diffRadianceMap, diffRadRes); 
+
+
+    Shader& diffRadGen = Storage::getShader("src/shaders/diffRadGen");
+    diffRadGen.use();
+    diffRadGen.set1Int("envTex", 0);
+    diffRadGen.setMat4("projection", glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f));
+
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+
+    glViewport(0, 0, diffRadRes, diffRadRes);
+
+    for (int i = 0; i < 6; i++)
+    {
+        diffRadGen.setMat4("view", views[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, diffRadianceMap, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Fbuff not complete!!!!!\n";
+}
+
 

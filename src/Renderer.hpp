@@ -36,6 +36,8 @@ public:
 
     DirLight dirLight;
 
+    EnvironmentTex envTex;
+
 private:
 //Resolution
     glm::ivec2 renderRes;
@@ -93,6 +95,7 @@ private:
         Shader dirLightShadow;
         Shader deffered;
         Shader deffLight;
+        Shader environment;
     } shaders;
 
     struct vec3_16
@@ -119,10 +122,21 @@ private:
         glm::mat4 projView;
         glm::mat4 dirLightSpace;
         vec3_16 viewPos;
-    };
 
-    ShaderPosData shaderPosData;
+    } shaderPosData;
+
     GLuint shaderPosDataUBO;
+
+    
+    struct ShaderLightData //UBO #1
+    {
+        float gamma;
+        float bloomMinBrightness;
+        float exposure;
+
+    } shaderLightData;
+
+    GLuint shaderLightDataUBO;
 
 
     void setupShaders();
@@ -158,6 +172,7 @@ private:
     void drawSkybox(const glm::mat4& view, const glm::mat4& projection);
     void loadPointLights2Shader();
     void loadDirLight2Shader();
+    void renderShadows();
     void doBloom();
     void loadUBOs();
 

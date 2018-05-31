@@ -2,8 +2,6 @@
 
 layout (location = 0) out vec4 fragColor;
 
-in vec2 texCoords;
-
 uniform sampler2D albedoMetal;
 uniform sampler2D posRoughness;
 uniform sampler2D normalAmbientOcc;
@@ -35,16 +33,23 @@ layout (std140) uniform posData
     vec3 viewPos;
 };
 
-layout (std140) uniform lightData //TODO
+layout (std140) uniform lightData
 {
-    vec3 ambientLight;
-    float minBloomBrightness;
-    float exposure;
     float gamma;
+    float bloomMinBrightness;
+    float exposure;
 };
 
+vec2 texCoords = (gl_FragCoord.xy - vec2(0.5))/textureSize(albedoMetal, 0);
+vec3 albedo = texture(albedoMetal, texCoords).rgb;
+vec3 pos = texture(posRoughness, texCoords).rgb;
+vec3 normal = texture(normalAmbientOcc, texCoords).rgb;
+float metallic = texture(albedoMetal, texCoords).a;
+float roughness = texture(posRoughness, texCoords).a;
+float ambientOcc = texture(normalAmbientOcc, texCoords).a;
 
-#define PI 3.14
+
+#define PI 3.14159265359
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
@@ -52,7 +57,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 }  
 
 
-float DistributionGGX(vec3 N, vec3 H, float roughness)
+float DistributionGGX(vec3 N, vec3 H)
 {
     float a      = roughness*roughness;
     float a2     = a*a;
@@ -66,7 +71,7 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
     return num / denom;
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+float GeometrySchlickGGX(float NdotV)
 {
     float r = (roughness + 1.0);
     float k = (r*r) / 8.0;
@@ -77,37 +82,31 @@ float GeometrySchlickGGX(float NdotV, float roughness)
     return num / denom;
 }
 
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+float GeometrySmith(vec3 N, vec3 V, vec3 L)
 {
     float NdotV = max(dot(N, V), 0.0);
     float NdotL = max(dot(N, L), 0.0);
-    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
+    float ggx2  = GeometrySchlickGGX(NdotV);
+    float ggx1  = GeometrySchlickGGX(NdotL);
 	
     return ggx1 * ggx2;
 }
 
+
+
 vec3 calculateLight(vec3 radiance, vec3 lightDir)
 {
-    vec3 albedo = texture(albedoMetal, texCoords).rgb;
-    vec3 pos = texture(posRoughness, texCoords).rgb;
-    vec3 normal = texture(normalAmbientOcc, texCoords).rgb;
-
-    float metallic = texture(albedoMetal, texCoords).a;
-    float roughness = texture(posRoughness, texCoords).a;
-    float ambientOcc = texture(normalAmbientOcc, texCoords).a;
-
     vec3 viewDir = normalize(viewPos - pos);
-    vec3 half = normalize(viewDir + lightDir);
+    vec3 halfVec = normalize(viewDir + lightDir);
 
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metallic);
-    vec3 F  = fresnelSchlick(max(dot(half, viewDir), 0.0), F0);
+    vec3 F  = fresnelSchlick(max(dot(halfVec, viewDir), 0.0), F0);
 
         
     // cook-torrance brdf
-    float NDF = DistributionGGX(normal, half, roughness);        
-    float G   = GeometrySmith(normal, viewDir, lightDir, roughness);      
+    float NDF = DistributionGGX(normal, halfVec);        
+    float G   = GeometrySmith(normal, viewDir, lightDir);      
         
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
@@ -125,21 +124,18 @@ vec3 calculateLight(vec3 radiance, vec3 lightDir)
 
 float calcAttentuation(vec3 position)
 {
-    vec3 pos = texture(posRoughness, texCoords).rgb;
     float distance = length(position - pos);
     return 1.f / (distance * distance);
 }
 
 void main()
 {
-    vec3 normal = texture(normalAmbientOcc, texCoords).rgb;
     if(normal == vec3(0))
         discard;
 
     //float distance    = length(lightPositions[i] - WorldPos);
     //float attenuation = 1.0 / (distance * distance);
     //vec3 radiance     = lightColors[i] * attenuation;        
-    vec3 pos = texture(posRoughness, texCoords).rgb;
     
     vec3 res = vec3(0);
     res  += calculateLight(dirLight.color, -dirLight.dir);
