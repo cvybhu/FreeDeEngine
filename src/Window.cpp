@@ -77,6 +77,9 @@ namespace Window
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);  
+
+
         glfwSetCursorPos(window, mousePos.x, mousePos.y);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }

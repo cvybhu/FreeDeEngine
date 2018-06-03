@@ -165,6 +165,9 @@ private:
     GLuint create1x1Texture(glm::ivec3 color);
     void createDefaultTextures();
 
+    unsigned int brdfLUTTexture;
+    void generateBRDFLUTTex();
+
 
     //Drawing
     void setupMeshForDraw(const Mesh& mesh);

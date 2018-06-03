@@ -51,7 +51,7 @@ struct EnvironmentTex //HDR skybox for IBL
     GLuint hdrTex;
     GLuint cubeMap;
     GLuint diffRadianceMap;
-
+    GLuint prefilterMap;
 
     bool isOnRAM, isOnGPU;
 

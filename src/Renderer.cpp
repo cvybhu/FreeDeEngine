@@ -22,9 +22,11 @@ void Renderer::init(glm::ivec2 renderResolution, int maxSpritesNum)
     createBloomFramebuffs();
     createDefaultTextures();
     setupDrawOntoGeometry();
+    generateBRDFLUTTex();
     spritePool.init(maxSpritesNum);
 
     envTex.loadToRAM("tex/Alexs_Apt_2k.hdr");
+    //envTex.loadToRAM("tex/Tokyo_BigSight_3k.hdr");
     envTex.loadToGPU();
     envTex.generateCubeMaps(1024);
 }
@@ -63,7 +65,9 @@ void Renderer::setupShaders()
     shaders.environment.set1Int("albedoMetal", 0);
     shaders.environment.set1Int("posRoughness", 1);
     shaders.environment.set1Int("normalAmbientOcc", 2);
-    shaders.environment.set1Int("envIrradiance", 6);
+    shaders.environment.set1Int("envIrradiance", 4);
+    shaders.environment.set1Int("prefilterMap", 5);
+    shaders.environment.set1Int("brdfLUTTex", 6);
     shaders.environment.set1Int("skybox", 7);
 
     shaders.environment.set1Int("posData", 0);
@@ -457,8 +461,12 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
 
     shaders.environment.use();
-    glActiveTexture(GL_TEXTURE6);
+    glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_CUBE_MAP, envTex.diffRadianceMap);
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, envTex.prefilterMap);
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
 
     /*shaders.deffLight.use();
 
@@ -490,7 +498,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     shaders.postProcess.set1Float("exposure", exposure);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
-    //glBindTexture(GL_TEXTURE_2D, envTex.hdrTex);
+    //glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);
 
@@ -534,7 +542,7 @@ void Renderer::drawSkybox(const glm::mat4& viewMatrix, const glm::mat4& projecti
     shaders.skybox.set1Float("exposure", exposure);
 
     glActiveTexture(GL_TEXTURE7);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envTex.cubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, envTex.prefilterMap);
     //glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
 
 
@@ -634,4 +642,30 @@ void Renderer::vec3_16::operator=(const glm::vec3& v)
     x = v.x;
     y = v.y;
     z = v.z;
+}
+
+void Renderer::generateBRDFLUTTex()
+{
+    glGenTextures(1, &brdfLUTTexture);
+
+    // pre-allocate enough memory for the LUT texture.
+    glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+
+    GLuint fbuff;
+    glGenFramebuffers(1, &fbuff);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbuff);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
+
+    Shader& genShader = Storage::getShader("src/shaders/brdfLUTGen");
+    genShader.use();
+
+    glViewport(0, 0, 512, 512);
+    glBindVertexArray(screenQuad.VAO);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }

@@ -337,6 +337,44 @@ void EnvironmentTex::generateCubeMaps(int resolution)
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "Fbuff not complete!!!!!\n";
+
+//
+    int prefilterRes = 400;
+
+    glGenTextures(1, &prefilterMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+    for (int i = 0; i < 6; i++)
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA16F, prefilterRes, prefilterRes, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+    Shader& prefilterGen = Storage::getShader("src/shaders/prefilterGen");
+    prefilterGen.use();
+    prefilterGen.setMat4("projection", glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f));
+    prefilterGen.set1Int("envTex", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+
+    unsigned int maxMipLevels = 5;
+    for (int mip = 0; mip < maxMipLevels; mip++)
+    {
+        // reisze framebuffer according to mip-level size.
+        unsigned int mipRes  = prefilterRes * std::pow(0.5, mip);
+        glViewport(0, 0, mipRes, mipRes);
+
+        float roughness = (float)mip / (float)(maxMipLevels - 1);
+        prefilterGen.set1Float("roughness", roughness);
+        for (int i = 0; i < 6; i++)
+        {
+            prefilterGen.setMat4("view", views[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+    }
 }
 
 

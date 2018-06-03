@@ -16,7 +16,7 @@ void main()
     if(texture(normalAmbientOcc, texCoords).rgb != vec3(0))
         discard;
 
-    FragColor = texture(skybox, TexCoords).rgba;
+    FragColor = texture(skybox, TexCoords, 0).rgba;
 
     //exposure corection lol
     //FragColor = log(1 - FragColor) / -exposure;

@@ -5,9 +5,11 @@ layout (location = 0) out vec4 fragColor;
 uniform sampler2D albedoMetal;      //0
 uniform sampler2D posRoughness;     //1
 uniform sampler2D normalAmbientOcc; //2
+//emmision?
 
-
-uniform samplerCube envIrradiance; //6
+uniform samplerCube envIrradiance;  //4
+uniform samplerCube prefilterMap;   //5
+uniform sampler2D brdfLUTTex;       //6
 uniform samplerCube skybox; //7
 
 layout (std140) uniform posData
@@ -28,7 +30,6 @@ float metallic = texture(albedoMetal, texCoords).a;
 float roughness = texture(posRoughness, texCoords).a;
 float ambientOcc = texture(normalAmbientOcc, texCoords).a;
 
-
 #define PI 3.14159265359
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
@@ -40,8 +41,6 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0)
 {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }   
-
-
 
 float DistributionGGX(vec3 N, vec3 H)
 {
@@ -124,13 +123,28 @@ vec3 calcIBLLight()
     kD *= 1.0 - metallic;	  
     vec3 irradiance = texture(envIrradiance, normal).rgb;
     vec3 diffuse = irradiance * albedo;
-    vec3 ambient = (kD * diffuse) * ambientOcc;
+    
+
+    vec3 V = normalize(viewPos - pos);
+    vec3 N = normalize(normal);
+    vec3 R = reflect(-V, N);   
+
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
+
+    vec3 F        = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0);
+    vec2 envBRDF  = texture(brdfLUTTex, vec2(max(dot(N, V), 0.0))).rg;
+    vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+
+    vec3 ambient = (kD * diffuse + specular) * ambientOcc; 
     return ambient;
 }
 
 
 void main()
 {
+    normal = vec3(0, 0, 1); metallic = 1; roughness = 0;
+
     if(normal == vec3(0))
         discard;
 
