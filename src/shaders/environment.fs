@@ -130,10 +130,10 @@ vec3 calcIBLLight()
     vec3 R = reflect(-V, N);   
 
     const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD) .rgb;
 
     vec3 F        = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0);
-    vec2 envBRDF  = texture(brdfLUTTex, vec2(max(dot(N, V), 0.0))).rg;
+    vec2 envBRDF  = texture(brdfLUTTex, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
     vec3 ambient = (kD * diffuse + specular) * ambientOcc; 
@@ -143,7 +143,8 @@ vec3 calcIBLLight()
 
 void main()
 {
-    normal = vec3(0, 0, 1); metallic = 1; roughness = 0;
+     //metallic = 1;
+     F0 = mix(F0, albedo, metallic);
 
     if(normal == vec3(0))
         discard;
