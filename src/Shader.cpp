@@ -4,6 +4,7 @@
 #include <string>
 #include <Utils.hpp>
 
+
 void Shader::load(const std::string& path)
 {
     //vertex shader

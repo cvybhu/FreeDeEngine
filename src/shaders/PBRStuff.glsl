@@ -32,17 +32,18 @@ float ambientOcc = texture(normalAmbientOcc, texCoords).a;
 
 #define PI 3.14159265359
 
-vec3 fresnelSchlick(float cosTheta, vec3 F0)    //F
+vec3 fresnelSchlick(float cosTheta, vec3 F0)    //[F]resnel equation - reflectivity on angle of material with base reflectivity F0
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }  
 
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0)
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0)   //Modified approximated Fresnel for IBL purposes
 {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }   
 
-float DistributionGGX(vec3 N, vec3 H)
+
+float DistributionGGX(vec3 N, vec3 H)   // Normal [D]istribution - how many microfacets are aligned to halfway vector
 {
     float a      = roughness*roughness;
     float a2     = a*a;
@@ -56,7 +57,7 @@ float DistributionGGX(vec3 N, vec3 H)
     return num / denom;
 }
 
-float GeometrySchlickGGX(float NdotV)
+float GeometrySchlickGGX(float NdotV) //for direct lighting
 {
     float r = (roughness + 1.0);
     float k = (r*r) / 8.0;
@@ -67,7 +68,7 @@ float GeometrySchlickGGX(float NdotV)
     return num / denom;
 }
 
-float GeometrySmith(vec3 N, vec3 V, vec3 L)
+float GeometrySmith(vec3 N, vec3 V, vec3 L) //[G]eometry function - takes selfshadowing of rough surfaces into account
 {
     float NdotV = max(dot(N, V), 0.0);
     float NdotL = max(dot(N, L), 0.0);
@@ -80,14 +81,13 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L)
 vec3 F0 = vec3(0.04); 
 
 
-vec3 calculateLight(vec3 radiance, vec3 lightDir)
+vec3 calculateLight(vec3 radiance, vec3 lightDir)   //calculates point light with some radiance and direction
 {
     vec3 viewDir = normalize(viewPos - pos);
     vec3 halfVec = normalize(viewDir + lightDir);
 
-    vec3 F  = fresnelSchlick(max(dot(halfVec, viewDir), 0.0), mix(F0, albedo, metallic));
+    vec3 F  = fresnelSchlick(max(dot(halfVec, viewDir), 0.0), F0);
 
-        
     // cook-torrance brdf
     float NDF = DistributionGGX(normal, halfVec);        
     float G   = GeometrySmith(normal, viewDir, lightDir);      
@@ -106,7 +106,7 @@ vec3 calculateLight(vec3 radiance, vec3 lightDir)
 }
 
 
-float calcAttentuation(vec3 position)
+float calcAttentuation(vec3 position) //point light attentuation
 {
     float distance = length(position - pos);
     return 1.f / (distance * distance);
@@ -142,11 +142,8 @@ vec3 calcIBLLight()
 
 void main()
 {
-    if(normal == vec3(0))
-        discard;
-    
-    //metallic = 1;
     F0 = mix(F0, albedo, metallic);
 
-    fragColor = vec4(calcIBLLight(), 1);
+    
+
 }

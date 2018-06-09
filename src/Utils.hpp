@@ -44,3 +44,4 @@ std::string convert2String(const unsigned long long&);
 
 inline std::ostream& operator<<(std::ostream& os, const glm::vec3& v){return os << "(" << v.x << "," << v.y << "," << v.z << ")", os;}
 
+

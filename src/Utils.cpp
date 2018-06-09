@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
 #include <iomanip>
 
 std::string readFile(const char* path)

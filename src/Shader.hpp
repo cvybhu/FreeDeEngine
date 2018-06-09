@@ -34,4 +34,6 @@ struct Shader   //loads and compiles openGL shader. has cool methods to send dat
     void setMat4(const char* name, const glm::mat4& theMat) { glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, glm::value_ptr(theMat));}
 
     void setUBO(const char* name, GLuint uboBindingPoint) { glUniformBlockBinding(program, glGetUniformBlockIndex(program, name), uboBindingPoint);}
+
+
 };

@@ -4,6 +4,7 @@
 #include <Storage.hpp>
 #include <Logger.hpp>
 #include <TimeTeller.hpp>
+#include <Utils.hpp>
 
 
 using namespace std;
@@ -15,7 +16,6 @@ using namespace std;
 
 int main()
 {
-
     //Initialization and asset loading
     double loadStartTime = glfwGetTime();
 
