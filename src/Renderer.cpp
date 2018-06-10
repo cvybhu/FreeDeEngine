@@ -74,6 +74,16 @@ void Renderer::setupShaders()
 
     shaders.IBL.setUBO("posData", 0);
 
+//dirLight
+    shaders.dirLight = Storage::getShader("src/shaders/dirLight");
+    shaders.dirLight.use();
+
+    shaders.dirLight.set1Int("albedoMetal", 0);
+    shaders.dirLight.set1Int("posRoughness", 1);
+    shaders.dirLight.set1Int("normalAmbientOcc", 2);
+
+    shaders.dirLight.setUBO("posData", 0);
+
 //pointLight
     shaders.pointLight = Storage::getShader("src/shaders/pointLight");
     shaders.pointLight.use();
@@ -467,9 +477,18 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, deffBuff.normalAmbientOcc);
 
-    glActiveTexture(GL_TEXTURE7);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
 
+    //Dir light
+    shaders.dirLight.use();
+    glBindVertexArray(screenQuad.VAO);
+
+    shaders.dirLight.setVec3("lightDir", dirLight.dir);
+    shaders.dirLight.setVec3("lightColor", dirLight.color);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+    /*
     //point lights
     shaders.pointLight.use();
     Mesh& lightBall = Storage::getMesh("mesh/lightBallForShading.obj");
@@ -483,9 +502,13 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
         glDrawArrays(GL_TRIANGLES, 0, lightBall.vertsNum);
     }
+    */
 
+    glActiveTexture(GL_TEXTURE7);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
     glCullFace(GL_BACK);
 
+    /*
     //IBL
     shaders.IBL.use();
     glActiveTexture(GL_TEXTURE4);
@@ -497,7 +520,9 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
     glBindVertexArray(screenQuad.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    */
 
+    //skybox
     drawSkybox();
 
 

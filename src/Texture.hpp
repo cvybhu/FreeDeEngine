@@ -13,8 +13,10 @@ struct Texture //holds pixel data. possible to load from file and on GPU
     GLuint glIndx;
 
     bool isOnRAM, isOnGPU;
+    bool isNormalMap;
 
     void loadToRAM(const char* filePath);
+    void loadToRamAsNormalMap(const char* filePath);
     void loadToGPU(bool fixGamma = false);
 
     void unloadFromRAM();

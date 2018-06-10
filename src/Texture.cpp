@@ -22,6 +22,38 @@ void Texture::loadToRAM(const char* filePath)
     }
 
     isOnRAM = true;
+    isNormalMap = false;
+
+    std::cout << "[TEXLOAD]Succesfully loaded " << filePath << "!\n";
+}
+
+void Texture::loadToRamAsNormalMap(const char* filePath)
+{
+    stbi_set_flip_vertically_on_load(true);
+    //stbi_set_flip_horizontally_on_load(true);
+    data = stbi_load(filePath, &width, &height, &nrChannels, 0);
+
+    if (!data)
+    {
+        std::cout << "[ERROR TEX] Failed to load texture " << filePath << "\n";
+        return;
+    }
+
+    for(int i = 0; i < width*height*nrChannels; i += 3)
+    {
+        
+        char num = (char)((int)data[i] - 128);
+        data[i] = reinterpret_cast<unsigned char&>(num);
+
+        num = (char)((int)data[i+1] - 128);
+        data[i+1] = reinterpret_cast<unsigned char&>(num);
+
+        num = (char)((int)data[i+2] - 128);
+        data[i+2] = reinterpret_cast<unsigned char&>(num);
+    }
+    isNormalMap = true;
+
+    isOnRAM = true;
 
     std::cout << "[TEXLOAD]Succesfully loaded " << filePath << "!\n";
 }
@@ -32,13 +64,13 @@ void Texture::loadToGPU(bool fixGamma)
 {
     glGenTextures(1, &glIndx);
     glBindTexture(GL_TEXTURE_2D, glIndx);
-    // set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     GLenum types[2];
+    types[0] = types[1] = 0;
 
     switch(nrChannels)
     {
@@ -67,14 +99,17 @@ void Texture::loadToGPU(bool fixGamma)
     }
     };
 
-    glTexImage2D(GL_TEXTURE_2D, 0, types[0], width, height, 0, types[1], GL_UNSIGNED_BYTE, data);
+    if(!isNormalMap)
+        glTexImage2D(GL_TEXTURE_2D, 0, types[0], width, height, 0, types[1], GL_UNSIGNED_BYTE, data);
+    else
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8_SNORM, width, height, 0, GL_RGB, GL_BYTE, data);
+
 
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
 
     isOnGPU = true;
 }

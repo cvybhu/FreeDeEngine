@@ -94,6 +94,7 @@ private:
         Shader dirLightShadow;
         Shader IBL;
         Shader pointLight;
+        Shader dirLight;
         Shader gausBlur;
     } shaders;
 

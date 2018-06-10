@@ -120,7 +120,12 @@ void Mesh::loadToRAM(const char* filePath)
 
         if(input == "normTex")
         {
-            loadTex(normalTex);
+            std::string texPath;
+            file >> texPath;
+            normalTex = &Storage::getTex(texPath.c_str());
+
+            if(!normalTex->isOnRAM)
+                normalTex->loadToRamAsNormalMap(texPath.c_str());
             continue;
         }
 
