@@ -62,6 +62,7 @@ private:
     {
         GLuint index;
         GLuint color; //RGBA16F
+        //depth is taken from deffBuff
 
         GLenum renderTargets[1] = {GL_COLOR_ATTACHMENT0};
     } mainFbuff;
@@ -84,18 +85,16 @@ private:
     //Shaders
     struct
     {
-        Shader main;
+        Shader deffered;
         Shader skybox;
         Shader justColor;
         Shader postProcess;
-        Shader gausBlur;
         //Shader showTBN;
-        //Shader basic;
         Shader pointLightShadow;
         Shader dirLightShadow;
-        Shader deffered;
-        Shader deffLight;
-        Shader environment;
+        Shader IBL;
+        Shader pointLight;
+        Shader gausBlur;
     } shaders;
 
     struct vec3_16
@@ -168,13 +167,10 @@ private:
     unsigned int brdfLUTTexture;
     void generateBRDFLUTTex();
 
-
     //Drawing
     void setupMeshForDraw(const Mesh& mesh);
     void drawMesh(Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader);
-    void drawSkybox(const glm::mat4& view, const glm::mat4& projection);
-    void loadPointLights2Shader();
-    void loadDirLight2Shader();
+    void drawSkybox();
     void renderShadows();
     void doBloom();
     void loadUBOs();

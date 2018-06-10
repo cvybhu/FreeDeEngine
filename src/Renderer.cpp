@@ -25,8 +25,8 @@ void Renderer::init(glm::ivec2 renderResolution, int maxSpritesNum)
     generateBRDFLUTTex();
     spritePool.init(maxSpritesNum);
 
-    envTex.loadToRAM("tex/Alexs_Apt_2k.hdr");
-    //envTex.loadToRAM("tex/Tokyo_BigSight_3k.hdr");
+    //envTex.loadToRAM("tex/Alexs_Apt_2k.hdr");
+    envTex.loadToRAM("tex/Tokyo_BigSight_3k.hdr");
     envTex.loadToGPU();
     envTex.generateCubeMaps(1024);
 }
@@ -57,30 +57,32 @@ void Renderer::setupShaders()
 
     shaders.deffered.setUBO("posData", 0);
 
-//environtment - IBL
+//IBL
 
-    shaders.environment = Storage::getShader("src/shaders/environment");
-    shaders.environment.use();
+    shaders.IBL = Storage::getShader("src/shaders/IBL");
+    shaders.IBL.use();
 
-    shaders.environment.set1Int("albedoMetal", 0);
-    shaders.environment.set1Int("posRoughness", 1);
-    shaders.environment.set1Int("normalAmbientOcc", 2);
-    shaders.environment.set1Int("envIrradiance", 4);
-    shaders.environment.set1Int("prefilterMap", 5);
-    shaders.environment.set1Int("brdfLUTTex", 6);
-    shaders.environment.set1Int("skybox", 7);
+    shaders.IBL.set1Int("albedoMetal", 0);
+    shaders.IBL.set1Int("posRoughness", 1);
+    shaders.IBL.set1Int("normalAmbientOcc", 2);
 
-    shaders.environment.set1Int("posData", 0);
+    shaders.IBL.set1Int("envIrradiance", 4);
+    shaders.IBL.set1Int("prefilterMap", 5);
+    shaders.IBL.set1Int("brdfLUTTex", 6);
 
-//deffLight
-    shaders.deffLight = Storage::getShader("src/shaders/defferedLight");
-    shaders.deffLight.use();
-    shaders.deffLight.set1Int("albedoMetal", 0);
-    shaders.deffLight.set1Int("posRoughness", 1);
-    shaders.deffLight.set1Int("normalAmbientOcc", 2);
+    shaders.IBL.set1Int("skybox", 7);
 
+    shaders.IBL.setUBO("posData", 0);
 
-    shaders.deffLight.setUBO("posData", 0);
+//pointLight
+    shaders.pointLight = Storage::getShader("src/shaders/pointLight");
+    shaders.pointLight.use();
+
+    shaders.pointLight.set1Int("albedoMetal", 0);
+    shaders.pointLight.set1Int("posRoughness", 1);
+    shaders.pointLight.set1Int("normalAmbientOcc", 2);
+
+    shaders.pointLight.setUBO("posData", 0);
 
 //skybox
     shaders.skybox = Storage::getShader("src/shaders/skybox");
@@ -89,10 +91,10 @@ void Renderer::setupShaders()
     shaders.skybox.set1Int("skybox", 7);
 
 //justColor
-    shaders.justColor = Storage::getShader("src/shaders/justColorMTR");
+    shaders.justColor = Storage::getShader("src/shaders/justColor");
     shaders.justColor.use();
+
     shaders.justColor.setUBO("posData", 0);
-    shaders.justColor.setUBO("lightData", 1);
 
 //point light shadows
     shaders.pointLightShadow = Storage::getShader("src/shaders/pointLightShadow");
@@ -154,6 +156,8 @@ void Renderer::createMainFramebuff()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mainFbuff.color, 0);
+
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, deffBuff.depth);
 }
 
 
@@ -276,7 +280,7 @@ void Renderer::createDefaultTextures()
 {
     defaultTexs.albedo = create1x1Texture({128, 128, 128});
     defaultTexs.metallic = create1x1Texture({0, 0, 0});
-    defaultTexs.roughness = create1x1Texture({128, 128, 128});
+    defaultTexs.roughness = create1x1Texture({192, 192, 192});
     defaultTexs.normal = create1x1Texture({128, 128, 255});
     defaultTexs.displacement = create1x1Texture({0, 0, 0});
     defaultTexs.ambientOcc = create1x1Texture({255, 255, 255});
@@ -431,6 +435,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
 
     glDrawBuffers(3, deffBuff.renderTargets);
 
@@ -446,10 +451,15 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
     //glViewport(0, 0, renderRes.x, renderRes.y);
     glClear(GL_COLOR_BUFFER_BIT);
+
     glDisable(GL_DEPTH_TEST);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
 
     glDrawBuffers(1, mainFbuff.renderTargets); //only color
 
+    //Deffered data setup
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, deffBuff.albedoMetal);
     glActiveTexture(GL_TEXTURE1);
@@ -460,7 +470,24 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
 
-    shaders.environment.use();
+    //point lights
+    shaders.pointLight.use();
+    Mesh& lightBall = Storage::getMesh("mesh/lightBallForShading.obj");
+    glBindVertexArray(lightBall.VAO);
+    glCullFace(GL_FRONT);
+
+    for(PointLight* light : pointLights)
+    {
+        shaders.pointLight.setVec3("lightPos", light->pos);
+        shaders.pointLight.setVec3("lightColor", light->color);
+
+        glDrawArrays(GL_TRIANGLES, 0, lightBall.vertsNum);
+    }
+
+    glCullFace(GL_BACK);
+
+    //IBL
+    shaders.IBL.use();
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_CUBE_MAP, envTex.diffRadianceMap);
     glActiveTexture(GL_TEXTURE5);
@@ -468,23 +495,33 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
 
-    /*shaders.deffLight.use();
-
-    //quick lighting solution to test PBR - gotta do it completely another deffered way
-    shaders.deffLight.setVec3("dirLight.color", dirLight.color);
-    shaders.deffLight.setVec3("dirLight.dir", dirLight.dir);
-    shaders.deffLight.setVec3("pointLights[0].color", pointLights[0]->color);
-    shaders.deffLight.setVec3("pointLights[0].pos", pointLights[0]->pos);
-    shaders.deffLight.setVec3("pointLights[1].color", pointLights[1]->color);
-    shaders.deffLight.setVec3("pointLights[1].pos", pointLights[1]->pos);
-    */
-
     glBindVertexArray(screenQuad.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    drawSkybox(viewMatrix, projectionMatrix);
+    drawSkybox();
+
+
+//Forward drawing
+    glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+
+    //point lights drawing
+    shaders.justColor.use();
+
+    Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
+    glBindVertexArray(lightMesh.VAO);
+
+
+    for(PointLight* light : pointLights)
+    {
+        shaders.justColor.setVec3("color", light->color);
+        shaders.justColor.setMat4("model", glm::scale(glm::translate(glm::mat4(1), light->pos), glm::vec3(0.3)));
+        glDrawArrays(GL_TRIANGLES, 0, lightMesh.vertsNum);
+    }
+
+
+//Bloom
     //here will be bloom 
-    //Bloom
     //doBloom();
 
 
@@ -492,7 +529,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, Window::width, Window::height);
     glClear(GL_COLOR_BUFFER_BIT);
-    //glDisable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
 
     shaders.postProcess.use();
     shaders.postProcess.set1Float("exposure", exposure);
@@ -537,7 +574,7 @@ void Renderer::doBloom()
     }
 }
 
-void Renderer::drawSkybox(const glm::mat4& viewMatrix, const glm::mat4& projectionMatrix)
+void Renderer::drawSkybox()
 {
     shaders.skybox.use();
     shaders.skybox.set1Float("exposure", exposure);
@@ -546,69 +583,10 @@ void Renderer::drawSkybox(const glm::mat4& viewMatrix, const glm::mat4& projecti
     glBindTexture(GL_TEXTURE_CUBE_MAP, envTex.prefilterMap);
     //glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
 
-
     glBindVertexArray(skyboxCube.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-void Renderer::loadPointLights2Shader()
-{
-    int pointLightsNum = 0;
-    int shadowPointLightsNum = 0;
-    /*
-    for(PointLight* light : pointLights)
-        if(!light->shadow.active)
-        {
-            mainLightData.pointLights[pointLightsNum].pos = light->pos;
-            mainLightData.pointLights[pointLightsNum].color = light->color;
-            mainLightData.pointLights[pointLightsNum].constant = light->constant;
-            mainLightData.pointLights[pointLightsNum].linear = light->linear;
-            mainLightData.pointLights[pointLightsNum].quadratic = light->quadratic;
-
-            pointLightsNum++;
-        }
-        else
-        {
-            mainLightData.shadowPointLights[shadowPointLightsNum].pos = light->pos;
-            mainLightData.shadowPointLights[shadowPointLightsNum].color = light->color;
-            mainLightData.shadowPointLights[shadowPointLightsNum].constant = light->constant;
-            mainLightData.shadowPointLights[shadowPointLightsNum].linear = light->linear;
-            mainLightData.shadowPointLights[shadowPointLightsNum].quadratic = light->quadratic;
-
-            mainLightData.shadowPointFarPlanes[shadowPointLightsNum] = light->shadow.farPlane;
-
-            shadowPointLightsNum++;
-        }
-
-    mainLightData.pointLightsNum = pointLightsNum;
-    mainLightData.shadowPointLightsNum = shadowPointLightsNum;
-    */
-    //std::cout << "pointLightsNum: " << pointLightsNum << '\n';
-    //std::cout << "shadowsNum: " << shadowPointLightsNum << '\n';
-}
-
-void Renderer::loadDirLight2Shader()
-{
-    //mainLightData.dirLight.color = dirLight.color;
-    //mainLightData.dirLight.dir = dirLight.dir;
-    //mainLightData.isDirShadowActive = (dirLight.shadow.active ? 1 : 0);
-
-    if(dirLight.shadow.active)
-    {
-        //glActiveTexture(GL_TEXTURE5);
-        //glBindTexture(GL_TEXTURE_2D, dirLight.shadow.depth);
-    }
-}
-
-/*void Renderer::setRenderRes(glm::ivec2 newRenderRes)
-{
-    //TODO - realoc buffers
-
-    renderRes = newRenderRes;
-}
-
-//void Renderer
-*/
 
 Sprite3D* Renderer::addSprite3D(Mesh& itsMesh)
 {

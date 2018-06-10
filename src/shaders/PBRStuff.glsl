@@ -21,15 +21,6 @@ layout (std140) uniform posData
     vec3 viewPos;
 };
 
-
-vec2 texCoords = (gl_FragCoord.xy - vec2(0.5))/textureSize(albedoMetal, 0);
-vec3 albedo = texture(albedoMetal, texCoords).rgb;
-vec3 pos = texture(posRoughness, texCoords).rgb;
-vec3 normal = texture(normalAmbientOcc, texCoords).rgb;
-float metallic = texture(albedoMetal, texCoords).a;
-float roughness = texture(posRoughness, texCoords).a;
-float ambientOcc = texture(normalAmbientOcc, texCoords).a;
-
 #define PI 3.14159265359
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)    //[F]resnel equation - reflectivity on angle of material with base reflectivity F0
@@ -37,13 +28,13 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)    //[F]resnel equation - reflectiv
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }  
 
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0)   //Modified approximated Fresnel for IBL purposes
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)   //Modified approximated Fresnel for IBL purposes
 {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }   
 
 
-float DistributionGGX(vec3 N, vec3 H)   // Normal [D]istribution - how many microfacets are aligned to halfway vector
+float DistributionGGX(vec3 N, vec3 H, float roughness)   // Normal [D]istribution - how many microfacets are aligned to halfway vector
 {
     float a      = roughness*roughness;
     float a2     = a*a;
@@ -57,10 +48,10 @@ float DistributionGGX(vec3 N, vec3 H)   // Normal [D]istribution - how many micr
     return num / denom;
 }
 
-float GeometrySchlickGGX(float NdotV) //for direct lighting
+float GeometrySchlickGGX(float NdotV, float roughness)
 {
     float r = (roughness + 1.0);
-    float k = (r*r) / 8.0;
+    float k = (r*r) / 8.0; //<-for direct lighting
 
     float num   = NdotV;
     float denom = NdotV * (1.0 - k) + k;
@@ -68,29 +59,27 @@ float GeometrySchlickGGX(float NdotV) //for direct lighting
     return num / denom;
 }
 
-float GeometrySmith(vec3 N, vec3 V, vec3 L) //[G]eometry function - takes selfshadowing of rough surfaces into account
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) //[G]eometry function - takes selfshadowing of rough surfaces into account
 {
     float NdotV = max(dot(N, V), 0.0);
     float NdotL = max(dot(N, L), 0.0);
-    float ggx2  = GeometrySchlickGGX(NdotV);
-    float ggx1  = GeometrySchlickGGX(NdotL);
+    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
 	
     return ggx1 * ggx2;
 }
 
-vec3 F0 = vec3(0.04); 
 
 
-vec3 calculateLight(vec3 radiance, vec3 lightDir)   //calculates point light with some radiance and direction
+vec3 calculateLight(vec3 radiance, vec3 lightDir, vec2 texCoords)   //calculates point light with some radiance and direction
 {
     vec3 viewDir = normalize(viewPos - pos);
     vec3 halfVec = normalize(viewDir + lightDir);
 
+    //BRDF
     vec3 F  = fresnelSchlick(max(dot(halfVec, viewDir), 0.0), F0);
-
-    // cook-torrance brdf
-    float NDF = DistributionGGX(normal, halfVec);        
-    float G   = GeometrySmith(normal, viewDir, lightDir);      
+    float NDF = DistributionGGX(normal, halfVec, roughness);        
+    float G   = GeometrySmith(normal, viewDir, lightDir, roughness);      
         
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
@@ -115,9 +104,9 @@ float calcAttentuation(vec3 position) //point light attentuation
 
     
 
-vec3 calcIBLLight()
+vec3 calcIBLLight(vec2 texCoords)
 {
-    vec3 kS = fresnelSchlickRoughness(max(dot(normal, normalize(viewPos - pos)), 0.0), mix(F0, albedo, metallic));
+    vec3 kS = fresnelSchlickRoughness(max(dot(normal, normalize(viewPos - pos)), 0.0), F0);
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;	  
     vec3 irradiance = texture(envIrradiance, normal).rgb;
@@ -131,7 +120,7 @@ vec3 calcIBLLight()
     const float MAX_REFLECTION_LOD = 4.0;
     vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD) .rgb;
 
-    vec3 F        = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0);
+    vec3 F        = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
     vec2 envBRDF  = texture(brdfLUTTex, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
@@ -142,8 +131,14 @@ vec3 calcIBLLight()
 
 void main()
 {
-    F0 = mix(F0, albedo, metallic);
-
+    vec2 texCoords = (gl_FragCoord.xy - vec2(0.5))/textureSize(albedoMetal, 0);
     
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
 
+    vec3 albedo = texture(albedoMetal, texCoords).rgb;
+    vec3 pos = texture(posRoughness, texCoords).rgb;
+    vec3 normal = texture(normalAmbientOcc, texCoords).rgb;
+    float metallic = texture(albedoMetal, texCoords).a;
+    float roughness = texture(posRoughness, texCoords).a;
+    float ambientOcc = texture(normalAmbientOcc, texCoords).a;
 }

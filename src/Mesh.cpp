@@ -52,6 +52,7 @@ void Mesh::loadToRAM(const char* filePath)
 
     while(file >> input)
     {
+
         if(input != "v" && input != "vt" && input != "vn" && input != "f" && input != "albedoTex" && input != "metalTex" && input != "roughTex" && input != "normTex" && input != "ambientOccTex")
             continue;
 

@@ -1,0 +1,23 @@
+# Blender v2.79 (sub 0) OBJ File: ''
+# www.blender.org
+o Plane
+
+albedoTex tex/sculptedfloorboards3_Unreal-Engine/sculptedfloorboards3_basecolor.png
+metalTex tex/sculptedfloorboards3_Unreal-Engine/sculptedfloorboards3_metalness.png
+roughTex tex/sculptedfloorboards3_Unreal-Engine/sculptedfloorboards3_roughness.png
+normTex tex/sculptedfloorboards3_Unreal-Engine/sculptedfloorboards3_normal.png
+ambientOccTex tex/sculptedfloorboards3_Unreal-Engine/sculptedfloorboards3_AO.png
+
+
+v 10000.000000 10000.000000 0.000000
+v -10000.000000 10000.000000 0.000000
+v 10000.000000 -10000.000000 0.000000
+v -10000.000000 -10000.000000 0.000000
+vt 2247.268311 -2246.268311
+vt -2246.268311 2247.268311
+vt -2246.268066 -2246.268311
+vt 2247.268311 2247.268311
+vn 0.0000 0.0000 1.0000
+s off
+f 2/1/1 3/2/1 1/3/1
+f 2/1/1 4/4/1 3/2/1

@@ -13,6 +13,7 @@ using namespace std;
 
 #define showOgl(a) GLint xDD##a; glGetIntegerv(a, &xDD##a); std::cout << #a << ": " << xDD##a << '\n';
 
+#define checkGlError() {GLenum err; while((err = glGetError()) != GL_NO_ERROR){std::cout << "[ERRRRRROOOOORRRRRRRRRR] OpenGL error in "  << __FILE__ << "(" << __LINE__ << ")  error code: " << err << '\n';}}
 
 int main()
 {
@@ -23,7 +24,7 @@ int main()
 
 
     //const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj", "mesh/particle.obj", "mesh/pointShadowTest.obj"};
-    const char* meshes2Load[] = {"mesh/pbrCube.obj", "mesh/light.obj"};
+    const char* meshes2Load[] = {"mesh/lightBallForShading.obj", "mesh/pbrCube.obj", "mesh/light.obj", "mesh/floor.obj"};
 
     for(unsigned i = 0; i < sizeof(meshes2Load)/sizeof(const char*); i++)
     {
@@ -32,7 +33,7 @@ int main()
         mesh.loadToGPU();
     }
 
-    const char* shaders2Load[] = {"src/shaders/lightUse", "src/shaders/oneColor", "src/shaders/postProcess", "src/shaders/skybox", "src/shaders/instance", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow", "src/shaders/showTBN", "src/shaders/gausBlur", "src/shaders/basic", "src/shaders/main", "src/shaders/justColorMTR", "src/shaders/deffered", "src/shaders/defferedLight", "src/shaders/environment", "src/shaders/streched2cube", "src/shaders/diffRadGen", "src/shaders/prefilterGen", "src/shaders/brdfLUTGen"};
+    const char* shaders2Load[] = {"src/shaders/postProcess", "src/shaders/skybox", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow", "src/shaders/showTBN", "src/shaders/gausBlur", "src/shaders/justColor", "src/shaders/deffered", "src/shaders/streched2cube", "src/shaders/diffRadGen", "src/shaders/prefilterGen", "src/shaders/brdfLUTGen", "src/shaders/IBL", "src/shaders/pointLight"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {
@@ -44,6 +45,7 @@ int main()
 
     std::cout<<"LOAD AND INIT TIME: "<< (glfwGetTime() - loadStartTime)*1000<<"ms\n";
 
+    checkGlError();
 
     showOgl(GL_MAX_VERTEX_IMAGE_UNIFORMS);
     showOgl(GL_MAX_GEOMETRY_IMAGE_UNIFORMS);
@@ -53,11 +55,6 @@ int main()
     //Game loop
     double lastFrameTime = glfwGetTime();
     double deltaTime = 0;
-
-    GLenum err;
-        while ((err = glGetError()) != GL_NO_ERROR) {
-        std::cout << "OpenGL error: " << err << '\n';
-        }
 
 
     TimeTeller frameTimeTeller("frame time", 1.5);
