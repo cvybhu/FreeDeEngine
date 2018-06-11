@@ -91,6 +91,7 @@ void Renderer::setupShaders()
     shaders.pointLight.set1Int("albedoMetal", 0);
     shaders.pointLight.set1Int("posRoughness", 1);
     shaders.pointLight.set1Int("normalAmbientOcc", 2);
+    shaders.pointLight.set1Int("shadowDepth", 4);
 
     shaders.pointLight.setUBO("posData", 0);
 
@@ -111,6 +112,11 @@ void Renderer::setupShaders()
 
 //dir light shadows
     shaders.dirLightShadow = Storage::getShader("src/shaders/dirLightShadow");
+
+//bloomSelect
+    shaders.bloomSelect = Storage::getShader("src/shaders/bloomSelect");
+    shaders.bloomSelect.use();
+    shaders.bloomSelect.set1Int("screenTex", 4);
 
 //gaus blur (for bloom)
     shaders.gausBlur = Storage::getShader("src/shaders/gausBlur");
@@ -167,6 +173,18 @@ void Renderer::createMainFramebuff()
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mainFbuff.color, 0);
 
+    //For bright color selection for bloom
+    glGenTextures(1, &mainFbuff.forBloom);
+    glBindTexture(GL_TEXTURE_2D, mainFbuff.forBloom);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, renderRes.x, renderRes.y, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, mainFbuff.forBloom, 0);
+
+
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, deffBuff.depth);
 }
 
@@ -181,8 +199,8 @@ void Renderer::createBloomFramebuffs()
         glGenTextures(1, &bloomFbuffs[i].color);
         glBindTexture(GL_TEXTURE_2D, bloomFbuffs[i].color);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, bloomRes.x, bloomRes.y, 0, GL_RGBA, GL_FLOAT, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -377,6 +395,7 @@ void Renderer::loadUBOs()
 void Renderer::renderShadows()
 {
      //Dir Light shadow
+     glCullFace(GL_FRONT);
     if(dirLight.shadow.active)
     {
         shaders.dirLightShadow.use();
@@ -397,6 +416,7 @@ void Renderer::renderShadows()
             glDrawArrays(GL_TRIANGLES, 0, sprite->myMesh->vertsNum);   
         }
     }
+    glCullFace(GL_BACK);
 
 
     //Point light shadows
@@ -438,6 +458,11 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     shaderPosData.viewPos = viewPos;
 
     loadUBOs();
+    checkGlError();
+
+    renderShadows();
+    checkGlError();
+
 
 //Deffered pass
     glBindFramebuffer(GL_FRAMEBUFFER, deffBuff.index);
@@ -448,6 +473,8 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glDisable(GL_BLEND);
 
     glDrawBuffers(3, deffBuff.renderTargets);
+    checkGlError();
+
 
     shaders.deffered.use();
 
@@ -456,18 +483,18 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
         setupMeshForDraw(*sprite->myMesh);
         drawMesh(*sprite->myMesh, sprite->model, shaders.deffered);
     }
+    checkGlError();
+
 
 //Light pass
     glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
     //glViewport(0, 0, renderRes.x, renderRes.y);
+    glDrawBuffers(1, mainFbuff.renderTargets); //only color
     glClear(GL_COLOR_BUFFER_BIT);
-
     glDisable(GL_DEPTH_TEST);
-
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
 
-    glDrawBuffers(1, mainFbuff.renderTargets); //only color
 
     //Deffered data setup
     glActiveTexture(GL_TEXTURE0);
@@ -476,8 +503,10 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glBindTexture(GL_TEXTURE_2D, deffBuff.posRoughness);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, deffBuff.normalAmbientOcc);
+    checkGlError();
 
 
+    /*
     //Dir light
     shaders.dirLight.use();
     glBindVertexArray(screenQuad.VAO);
@@ -486,7 +515,8 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     shaders.dirLight.setVec3("lightColor", dirLight.color);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
-
+    checkGlError();
+    */
 
     
     //point lights
@@ -495,19 +525,28 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glBindVertexArray(lightBall.VAO);
     glCullFace(GL_FRONT);
 
+    glActiveTexture(GL_TEXTURE4);
     for(PointLight* light : pointLights)
     {
         shaders.pointLight.setVec3("lightPos", light->pos);
         shaders.pointLight.setVec3("lightColor", light->color);
 
+        
+        if(!light->shadow.active)
+        {
+            shaders.pointLight.set1Int("hasShadow", 0);
+        }
+        else
+        {
+            shaders.pointLight.set1Int("hasShadow", 1);
+            shaders.pointLight.set1Float("shadowFarPlane", light->shadow.farPlane);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadow.cubeMap);
+        }
+        
         glDrawArrays(GL_TRIANGLES, 0, lightBall.vertsNum);
     }
-    
-
-    glActiveTexture(GL_TEXTURE7);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
     glCullFace(GL_BACK);
-
+    checkGlError();
     
     //IBL
     shaders.IBL.use();
@@ -520,10 +559,8 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
     glBindVertexArray(screenQuad.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    
+    checkGlError();
 
-    //skybox
-    drawSkybox();
 
 
 //Forward drawing
@@ -543,45 +580,68 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
         shaders.justColor.setMat4("model", glm::scale(glm::translate(glm::mat4(1), light->pos), glm::vec3(0.3)));
         glDrawArrays(GL_TRIANGLES, 0, lightMesh.vertsNum);
     }
+    checkGlError();
 
 
-//Bloom
-    //here will be bloom 
+//Bloom 1/2
+    /*
+    shaders.bloomSelect.use();
+    shaders.bloomSelect.set1Float("bloomMinBrightness", bloomMinBrightness);
+
+    glDisable(GL_DEPTH_TEST); glDisable(GL_CULL_FACE);
+    GLenum renderTargets[] = {GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(1, renderTargets);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
+
+    glBindVertexArray(screenQuad.VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    */
+    
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, mainFbuff.index); 
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, bloomFbuffs[0].index); 
+    glReadBuffer(GL_COLOR_ATTACHMENT0); 
+    glDrawBuffer(GL_COLOR_ATTACHMENT0); 
+    glBlitFramebuffer(0, 0, renderRes.x, renderRes.y, 0, 0, bloomRes.x, bloomRes.y, GL_COLOR_BUFFER_BIT, GL_LINEAR); 
+
+
+
+//Skybox
+    //drawSkybox();
+    //checkGlError();
+
+//Bloom 2/2
     //doBloom();
-
 
 //Post processing
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, Window::width, Window::height);
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
+    checkGlError();
 
     shaders.postProcess.use();
     shaders.postProcess.set1Float("exposure", exposure);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
     //glBindTexture(GL_TEXTURE_2D, deffBuff.normalAmbientOcc);
+    glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);
     //glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);
 
     glBindVertexArray(screenQuad.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    checkGlError();
 }
 
 void Renderer::doBloom()
 {   
-    int passes = 2;
+    int passes = 0;
 
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, mainFbuff.index);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, bloomFbuffs[0].index);
-    glReadBuffer(GL_COLOR_ATTACHMENT1);
-    glDrawBuffer(GL_COLOR_ATTACHMENT0);
-    glBlitFramebuffer(0, 0, renderRes.x, renderRes.y, 0, 0, bloomRes.x, bloomRes.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-
-    glDisable(GL_DEPTH_TEST);
-
+    /*
     shaders.gausBlur.use();
     glBindVertexArray(screenQuad.VAO);
     glViewport(0, 0, bloomRes.x, bloomRes.y);
@@ -597,6 +657,7 @@ void Renderer::doBloom()
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
+    */
 }
 
 void Renderer::drawSkybox()
@@ -605,7 +666,8 @@ void Renderer::drawSkybox()
     shaders.skybox.set1Float("exposure", exposure);
 
     glActiveTexture(GL_TEXTURE7);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, envTex.prefilterMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, envTex.cubeMap);
+    //glBindTexture(GL_TEXTURE_CUBE_MAP, pointLights[0]->shadow.cubeMap);
     //glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
 
     glBindVertexArray(skyboxCube.VAO);

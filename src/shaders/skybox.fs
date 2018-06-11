@@ -18,6 +18,8 @@ void main()
 
     FragColor = texture(skybox, TexCoords, 0).rgba;
 
+    gl_FragDepth = 0.9999999f;
+
     //exposure corection lol
     //FragColor = log(1 - FragColor) / -exposure;
 }

@@ -30,7 +30,7 @@ int main()
         mesh.loadToGPU();
     }
 
-    const char* shaders2Load[] = {"src/shaders/postProcess", "src/shaders/skybox", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow", "src/shaders/showTBN", "src/shaders/gausBlur", "src/shaders/justColor", "src/shaders/deffered", "src/shaders/streched2cube", "src/shaders/diffRadGen", "src/shaders/prefilterGen", "src/shaders/brdfLUTGen", "src/shaders/IBL", "src/shaders/pointLight", "src/shaders/dirLight"};
+    const char* shaders2Load[] = {"src/shaders/postProcess", "src/shaders/skybox", "src/shaders/dirLightShadow", "src/shaders/pointLightShadow", "src/shaders/showTBN", "src/shaders/gausBlur", "src/shaders/justColor", "src/shaders/deffered", "src/shaders/streched2cube", "src/shaders/diffRadGen", "src/shaders/prefilterGen", "src/shaders/brdfLUTGen", "src/shaders/IBL", "src/shaders/pointLight", "src/shaders/dirLight", "src/shaders/bloomSelect"};
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {
@@ -48,6 +48,8 @@ int main()
     showOgl(GL_MAX_GEOMETRY_IMAGE_UNIFORMS);
     showOgl(GL_MAX_FRAGMENT_IMAGE_UNIFORMS);
     showOgl(GL_MAX_COMPUTE_IMAGE_UNIFORMS);
+
+
 
     //Game loop
     double lastFrameTime = glfwGetTime();

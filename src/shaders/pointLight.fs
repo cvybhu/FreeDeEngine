@@ -5,6 +5,11 @@ out vec4 fragColor;
 uniform vec3 lightPos;
 uniform vec3 lightColor;
 
+uniform int hasShadow;
+uniform samplerCube shadowDepth; // 4;
+uniform float shadowFarPlane;
+
+
 uniform sampler2D albedoMetal;      //0
 uniform sampler2D posRoughness;     //1
 uniform sampler2D normalAmbientOcc; //2
@@ -18,6 +23,8 @@ layout (std140) uniform posData
     mat4 dirLightSpace;
     vec3 viewPos;
 };
+
+
 
 #define PI 3.14159265359
 
@@ -68,6 +75,43 @@ float calcAttentuation(float dist) //point light attentuation
 
 
 
+float shadowFactor(vec3 pos)
+{
+    vec3 fragToLight = pos - lightPos;
+    float currentDepth = length(fragToLight);
+
+    if(currentDepth > shadowFarPlane)
+        return 0;
+
+    float bias = 0.1;
+
+    vec3 sampleOffsetDirections[20] = vec3[]
+    (
+        vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1),
+        vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+        vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+        vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+        vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+    );
+
+    float shadow = 0.0;
+    int samples  = 20;
+    float viewDistance = length(viewPos - pos);
+    float diskRadius = 0.05;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(shadowDepth, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+        closestDepth *= shadowFarPlane;   // Undo mapping [0;1]
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);
+
+    return shadow;
+}
+
+
+
 void main()
 {
     vec2 texCoords = (gl_FragCoord.xy - vec2(0.5))/textureSize(albedoMetal, 0);
@@ -86,7 +130,7 @@ void main()
         discard;
 
 
-    vec3 radiance = lightColor * calcAttentuation(length(pos - lightPos));
+    vec3 radiance = PI*lightColor * calcAttentuation(length(pos - lightPos));
     
     vec3 viewDir = normalize(viewPos - pos);
     vec3 lightDir = normalize(lightPos - pos);
@@ -109,5 +153,10 @@ void main()
     float NdotL = max(dot(normal, lightDir), 0.0);                
     vec3 res =  (kD * albedo / PI + specular) * radiance * NdotL; 
 
+
+    if(hasShadow != 0)
+       res *= (1.0-shadowFactor(pos));
+
     fragColor = vec4(res, 1);
+    //fragColor = vec4(1-vec3(shadowFactor(pos)), 1);
 }

@@ -62,6 +62,7 @@ private:
     {
         GLuint index;
         GLuint color; //RGBA16F
+        GLuint forBloom;
         //depth is taken from deffBuff
 
         GLenum renderTargets[1] = {GL_COLOR_ATTACHMENT0};
@@ -96,6 +97,7 @@ private:
         Shader pointLight;
         Shader dirLight;
         Shader gausBlur;
+        Shader bloomSelect;
     } shaders;
 
     struct vec3_16

@@ -21,8 +21,7 @@ namespace Game
     FreeCam cam;
 
     Sprite3D* plane;
-    PointLight *shadowedLight;
-    PointLight* shadowedLight2;
+    PointLight *light0, *light1;
 
 
     void init()
@@ -45,13 +44,18 @@ namespace Game
         Sprite3D* pbrCube = render.addSprite3D(Storage::getMesh("mesh/pbrCube.obj"));
         pbrCube->model = glm::mat4(1);
 
-        PointLight* light0 = render.addPointLight();
+        light0 = render.addPointLight();
         light0->pos = {2, 2, 2};
-        light0->color = {0.5, 0.5, 0}; light0->color *= 10;
+        light0->color = {0.5, 0.5, 0.5}; light0->color *= 10;
+        light0->setupShadow(512, 100);
+        light0->activateShadow();
 
-        PointLight* light1 = render.addPointLight();
+        
+        light1 = render.addPointLight();
         light1->pos = {-3, -3, 4};
         light1->color = {0, 0.5, 0.5}; light1->color *= 10.f;
+        light1->setupShadow(666, 100);
+        light1->activateShadow();
 
         render.dirLight.color = glm::vec3(glm::vec2(0.5), 0.4) * 3.f;
         render.dirLight.dir = glm::vec3(0, -1, -1);
@@ -108,11 +112,8 @@ namespace Game
 
         auto centr = glm::vec3(20.5, -1, -1);
 
-        auto curVec = shadowedLight->pos - centr;
-        curVec = glm::rotate(curVec, deltaTime, glm::vec3(0, 0, 1));
-        //shadowedLight->pos = centr + curVec;
-
-        //shadowedLight2->pos += sin(glfwGetTime()) *0.01;
+        //light0->pos = glm::rotate(light0->pos, deltaTime, glm::vec3(0, 0, 1));
+        //light1->pos = glm::rotate(light1->pos, -deltaTime*0.5f, glm::vec3(0, 0, 1));
 
 
         if(Window::isPressed(GLFW_KEY_P))
