@@ -4,6 +4,10 @@
 #include <glm/vec3.hpp>
 #include <iostream>
 
+#define showOgl(a) GLint xDD##a; glGetIntegerv(a, &xDD##a); std::cout << #a << ": " << xDD##a << '\n';
+#define checkGlError() {GLenum err; while((err = glGetError()) != GL_NO_ERROR){std::cout << "[ERRRRRROOOOORRRRRRRRRR] OpenGL error in "  << __FILE__ << "(" << __LINE__ << ")  error code: " << err << '\n';}}
+
+
 std::string readFile(const char* path); //puts file in std::string
 
 
@@ -41,7 +45,5 @@ std::string convert2String(const double&);
 std::string convert2String(const unsigned&);
 std::string convert2String(const unsigned long long&);
 
-
-inline std::ostream& operator<<(std::ostream& os, const glm::vec3& v){return os << "(" << v.x << "," << v.y << "," << v.z << ")", os;}
 
 

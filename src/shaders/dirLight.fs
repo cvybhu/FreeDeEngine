@@ -81,7 +81,7 @@ void main()
     vec3 radiance = lightColor;
     
     vec3 viewDir = normalize(viewPos - pos);
-    vec3 lightVec = -lightDir;
+    vec3 lightVec = normalize(-lightDir);
     vec3 halfVec = normalize(viewDir + lightVec);
 
     //BRDF
@@ -95,12 +95,13 @@ void main()
         
     vec3 numerator    = NDF * G * F;
     float denominator = 4.0 * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightVec), 0.0);
-    vec3 specular     = numerator / denominator ;
+    vec3 specular     = numerator / max(denominator, 0001) ;
             
 
     float NdotL = max(dot(normal, lightVec), 0.0);                
     vec3 res =  (kD * albedo / PI + specular) * radiance * NdotL; 
 
     fragColor = vec4(res, 1);
-    //fragColor = vec4(normal, 1);
+
+    //fragColor = vec4(vec3(dot(normal, viewDir)), 1);
 }

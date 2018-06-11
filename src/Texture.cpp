@@ -27,6 +27,8 @@ void Texture::loadToRAM(const char* filePath)
     std::cout << "[TEXLOAD]Succesfully loaded " << filePath << "!\n";
 }
 
+#include <glm/vec3.hpp>
+
 void Texture::loadToRamAsNormalMap(const char* filePath)
 {
     stbi_set_flip_vertically_on_load(true);
@@ -39,9 +41,10 @@ void Texture::loadToRamAsNormalMap(const char* filePath)
         return;
     }
 
+    glm::vec3 average(0);
+
     for(int i = 0; i < width*height*nrChannels; i += 3)
     {
-        
         char num = (char)((int)data[i] - 128);
         data[i] = reinterpret_cast<unsigned char&>(num);
 
@@ -50,10 +53,16 @@ void Texture::loadToRamAsNormalMap(const char* filePath)
 
         num = (char)((int)data[i+2] - 128);
         data[i+2] = reinterpret_cast<unsigned char&>(num);
+
+        glm::vec3 normal(reinterpret_cast<char&>(data[i]), reinterpret_cast<char&>(data[i+1]), reinterpret_cast<char&>(data[i+2]));
+        normal = glm::normalize(normal); 
+        average += normal;
     }
     isNormalMap = true;
 
     isOnRAM = true;
+
+    std::cout << glm::normalize(average) << '\n';
 
     std::cout << "[TEXLOAD]Succesfully loaded " << filePath << "!\n";
 }
@@ -104,13 +113,13 @@ void Texture::loadToGPU(bool fixGamma)
     else
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8_SNORM, width, height, 0, GL_RGB, GL_BYTE, data);
 
-
+    
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
+    
     isOnGPU = true;
 }
 

@@ -488,7 +488,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
-    /*
+    
     //point lights
     shaders.pointLight.use();
     Mesh& lightBall = Storage::getMesh("mesh/lightBallForShading.obj");
@@ -502,13 +502,13 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
         glDrawArrays(GL_TRIANGLES, 0, lightBall.vertsNum);
     }
-    */
+    
 
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_CUBE_MAP, currentSkybox->glIndx);
     glCullFace(GL_BACK);
 
-    /*
+    
     //IBL
     shaders.IBL.use();
     glActiveTexture(GL_TEXTURE4);
@@ -520,7 +520,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
     glBindVertexArray(screenQuad.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    */
+    
 
     //skybox
     drawSkybox();

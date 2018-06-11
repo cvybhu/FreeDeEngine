@@ -11,9 +11,6 @@ using namespace std;
 
 
 
-#define showOgl(a) GLint xDD##a; glGetIntegerv(a, &xDD##a); std::cout << #a << ": " << xDD##a << '\n';
-
-#define checkGlError() {GLenum err; while((err = glGetError()) != GL_NO_ERROR){std::cout << "[ERRRRRROOOOORRRRRRRRRR] OpenGL error in "  << __FILE__ << "(" << __LINE__ << ")  error code: " << err << '\n';}}
 
 int main()
 {
@@ -78,6 +75,8 @@ int main()
         renderTimeTeller.startMeasuring();
 
         Game::draw();
+
+        checkGlError();
 
         glfwSwapBuffers(Window::window);
 
