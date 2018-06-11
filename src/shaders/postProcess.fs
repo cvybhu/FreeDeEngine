@@ -51,7 +51,7 @@ void main()
     //reinhard hdr tone mapping
     //FragColor = FragColor / (FragColor + 1.0);
 
-    //FragColor += vec4(texture(bloomTex, texCoords).rgb, 0);
+    FragColor += vec4(texture(bloomTex, texCoords).rgb, 0);
 
     //exposure hdr tone mapping
     FragColor = 1 - exp(-FragColor * exposure);

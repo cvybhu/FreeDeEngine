@@ -32,7 +32,7 @@ public:
 
     CubeTexture* currentSkybox = nullptr;
     float exposure = 0.5;
-    float bloomMinBrightness = 1.0;
+    float bloomMinBrightness = 10.0;
 
     DirLight dirLight;
 
@@ -62,10 +62,10 @@ private:
     {
         GLuint index;
         GLuint color; //RGBA16F
-        GLuint forBloom;
+        GLuint forBloom;    //RGBA16F
         //depth is taken from deffBuff
 
-        GLenum renderTargets[1] = {GL_COLOR_ATTACHMENT0};
+        GLenum renderTargets[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     } mainFbuff;
 
     //bloom gaus blur buffs
@@ -175,7 +175,7 @@ private:
     void drawMesh(Mesh& mesh, const glm::mat4& modelMatrix, Shader& shader);
     void drawSkybox();
     void renderShadows();
-    void doBloom();
+    void blurBloom();
     void loadUBOs();
 
     //Data storage

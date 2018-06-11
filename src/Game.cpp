@@ -29,7 +29,6 @@ namespace Game
         cam.pos = {0, 4, 0};
 
         render.init({Window::width, Window::height}, 10);
-        render.bloomMinBrightness = 1.5;
 
         CubeTexture& skyboxMountLake = Storage::getCubeTex("src/tex/mountainsCube");
         skyboxMountLake.loadToRAM("tex/mountainsCube");
@@ -112,8 +111,8 @@ namespace Game
 
         auto centr = glm::vec3(20.5, -1, -1);
 
-        //light0->pos = glm::rotate(light0->pos, deltaTime, glm::vec3(0, 0, 1));
-        //light1->pos = glm::rotate(light1->pos, -deltaTime*0.5f, glm::vec3(0, 0, 1));
+        light0->pos = glm::rotate(light0->pos, deltaTime, glm::vec3(0, 0, 1));
+        light1->pos = glm::rotate(light1->pos, -deltaTime*0.5f, glm::vec3(0, 0, 1));
 
 
         if(Window::isPressed(GLFW_KEY_P))

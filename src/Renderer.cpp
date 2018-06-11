@@ -199,8 +199,8 @@ void Renderer::createBloomFramebuffs()
         glGenTextures(1, &bloomFbuffs[i].color);
         glBindTexture(GL_TEXTURE_2D, bloomFbuffs[i].color);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, bloomRes.x, bloomRes.y, 0, GL_RGBA, GL_FLOAT, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -576,7 +576,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
     for(PointLight* light : pointLights)
     {
-        shaders.justColor.setVec3("color", light->color);
+        shaders.justColor.setVec3("color", light->color * 3.1415f);
         shaders.justColor.setMat4("model", glm::scale(glm::translate(glm::mat4(1), light->pos), glm::vec3(0.3)));
         glDrawArrays(GL_TRIANGLES, 0, lightMesh.vertsNum);
     }
@@ -584,13 +584,12 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
 
 //Bloom 1/2
-    /*
+
     shaders.bloomSelect.use();
     shaders.bloomSelect.set1Float("bloomMinBrightness", bloomMinBrightness);
 
     glDisable(GL_DEPTH_TEST); glDisable(GL_CULL_FACE);
-    GLenum renderTargets[] = {GL_COLOR_ATTACHMENT1};
-    glDrawBuffers(1, renderTargets);
+    glDrawBuffers(1, mainFbuff.renderTargets+1);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glActiveTexture(GL_TEXTURE4);
@@ -598,22 +597,26 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
     glBindVertexArray(screenQuad.VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    */
     
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mainFbuff.index); 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, bloomFbuffs[0].index); 
-    glReadBuffer(GL_COLOR_ATTACHMENT0); 
+    glReadBuffer(GL_COLOR_ATTACHMENT1); 
     glDrawBuffer(GL_COLOR_ATTACHMENT0); 
+    
     glBlitFramebuffer(0, 0, renderRes.x, renderRes.y, 0, 0, bloomRes.x, bloomRes.y, GL_COLOR_BUFFER_BIT, GL_LINEAR); 
-
+    
 
 
 //Skybox
-    //drawSkybox();
-    //checkGlError();
+    glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
+    glDrawBuffers(1, mainFbuff.renderTargets);
+    glEnable(GL_DEPTH_TEST); glDisable(GL_BLEND);
+    glViewport(0, 0, renderRes.x, renderRes.y);
+    drawSkybox();
+    checkGlError();
 
 //Bloom 2/2
-    //doBloom();
+    blurBloom();
 
 //Post processing
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -627,7 +630,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
     //glBindTexture(GL_TEXTURE_2D, deffBuff.normalAmbientOcc);
-    glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);
+    //glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);
     //glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);
@@ -637,11 +640,10 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     checkGlError();
 }
 
-void Renderer::doBloom()
+void Renderer::blurBloom()
 {   
-    int passes = 0;
+    int passes = 2;
 
-    /*
     shaders.gausBlur.use();
     glBindVertexArray(screenQuad.VAO);
     glViewport(0, 0, bloomRes.x, bloomRes.y);
@@ -657,7 +659,6 @@ void Renderer::doBloom()
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
-    */
 }
 
 void Renderer::drawSkybox()
