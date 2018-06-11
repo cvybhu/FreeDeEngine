@@ -21,7 +21,7 @@ float calculateRadius()
     float maxVal = max(lightColor.x, max(lightColor.y, lightColor.z));
 
     if(maxVal == 0)
-        return 0;
+        return 0.f;
 
     float minValInteresting = 0.005;
 

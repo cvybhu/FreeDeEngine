@@ -81,7 +81,7 @@ float shadowFactor(vec3 pos)
     float currentDepth = length(fragToLight);
 
     if(currentDepth > shadowFarPlane)
-        return 0;
+        return 0.f;
 
     float bias = 0.1;
 
