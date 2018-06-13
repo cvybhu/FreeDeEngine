@@ -15,6 +15,8 @@
 #include <Logger.hpp>
 #include <Utils.hpp>
 
+#include <imgui/imgui.h>
+
 namespace Game
 {
     Renderer render;
@@ -23,6 +25,7 @@ namespace Game
     Sprite3D* plane;
     PointLight *light0, *light1;
 
+    bool isImGuiOpened = false;
 
     void init()
     {
@@ -63,65 +66,36 @@ namespace Game
         //render.dirLight.activateShadow();
     }
 
-    void exposureTesting(float deltaTime)
-    {
-
-        float exposureSensitivity = 0.5;
-        if(Window::isPressed(GLFW_KEY_1))
-        {
-            render.exposure -= deltaTime * exposureSensitivity;
-            if(render.exposure < 0)
-                render.exposure = 0;
-            std::cout << "Exposure: " << render.exposure << '\n';
-        }
-
-        if(Window::isPressed(GLFW_KEY_2))
-        {
-            render.exposure += deltaTime * exposureSensitivity;
-            if(render.exposure > 1)
-                render.exposure = 1;
-            std::cout << "Exposure: " << render.exposure << '\n';
-        }
-    }
-
-    void bloomBrightTesting(float deltaTime)
-    {
-        float sensitivity = 0.5;
-        if(Window::isPressed(GLFW_KEY_3))
-        {
-            render.bloomMinBrightness -= deltaTime * sensitivity;
-            if(render.bloomMinBrightness < 0)
-                render.bloomMinBrightness = 0;
-            std::cout << "bloomMinBrightness: " << render.bloomMinBrightness << '\n';
-        }
-
-        if(Window::isPressed(GLFW_KEY_4))
-        {
-            render.bloomMinBrightness += deltaTime * sensitivity;
-            std::cout << "bloomMinBrightness: " << render.bloomMinBrightness << '\n';
-        }
-    }
-
     void update(float deltaTime)
     {
-        cam.handleMovement(deltaTime);
-
-        exposureTesting(deltaTime);
-        bloomBrightTesting(deltaTime);
-
-        auto centr = glm::vec3(20.5, -1, -1);
-
         light0->pos = glm::rotate(light0->pos, deltaTime, glm::vec3(0, 0, 1));
         light1->pos = glm::rotate(light1->pos, -deltaTime*0.5f, glm::vec3(0, 0, 1));
 
+        if(Window::isClicked(GLFW_KEY_TAB))
+            isImGuiOpened = !isImGuiOpened;
 
-        if(Window::isPressed(GLFW_KEY_P))
-            std::cout << "Camera pos: (" << cam.pos.x << ' ' << cam.pos.y << ' ' << cam.pos.z << "\n";
+        if(isImGuiOpened)
+            glfwSetInputMode(Window::window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        else
+            glfwSetInputMode(Window::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+
+        if(!isImGuiOpened)
+            cam.handleMovement(deltaTime);
     }
 
     void draw()
     {
         render.draw(cam.getViewMatrix(), cam.getProjectionMatrix());
+
+        if(isImGuiOpened)
+        {
+            ImGui::Begin("Control panel");
+
+            ImGui::SliderFloat("exposure", &render.exposure, 0, 1);   
+            
+            ImGui::End();
+        }
     }
 }
 

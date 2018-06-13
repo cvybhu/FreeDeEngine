@@ -642,7 +642,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
 
 void Renderer::blurBloom()
 {   
-    int passes = 2;
+    int passes = 1;
 
     shaders.gausBlur.use();
     glBindVertexArray(screenQuad.VAO);

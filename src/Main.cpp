@@ -6,10 +6,9 @@
 #include <TimeTeller.hpp>
 #include <Utils.hpp>
 
+#include <imgui/imgui_impl.h>
 
 using namespace std;
-
-
 
 
 int main()
@@ -19,6 +18,7 @@ int main()
 
     Window::init();
 
+    ImGui_impl_init(Window::window);
 
     //const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj", "mesh/particle.obj", "mesh/pointShadowTest.obj"};
     const char* meshes2Load[] = {"mesh/lightBallForShading.obj", "mesh/pbrCube.obj", "mesh/light.obj", "mesh/floor.obj"};
@@ -50,7 +50,6 @@ int main()
     showOgl(GL_MAX_COMPUTE_IMAGE_UNIFORMS);
 
 
-
     //Game loop
     double lastFrameTime = glfwGetTime();
     double deltaTime = 0;
@@ -66,32 +65,40 @@ int main()
 
         frameTimeTeller.startMeasuring();
 
-        //input
+    //input
         if(Window::isPressed(GLFW_KEY_ESCAPE))
             glfwSetWindowShouldClose(Window::window, true);
 
         Game::update((float)deltaTime);
 
 
-        //rendering
+    //rendering
         renderTimeTeller.startMeasuring();
+        ImGui_impl_startFrame();
+        
 
+        //game
         Game::draw();
 
-        checkGlError();
+        //imgui
+        ImGui_impl_endFrame(Window::width, Window::height);
 
         glfwSwapBuffers(Window::window);
 
         renderTimeTeller.stopMeasuring();
 
-        //Window update
+    //Window update
         Window::update();
-
+    
 
         frameTimeTeller.stopMeasuring();
         //frameTimeTeller.tell();
         renderTimeTeller.tell();
     }
+
+
+    
+    ImGui_impl_deinit();
 
     return 0;
 }

@@ -410,7 +410,7 @@ void EnvironmentTex::generateCubeMaps(int resolution)
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
     unsigned int maxMipLevels = 5;
-    for (int mip = 0; mip < maxMipLevels; mip++)
+    for (int mip = 0; mip < (int)maxMipLevels; mip++)
     {
         // reisze framebuffer according to mip-level size.
         unsigned int mipRes  = prefilterRes * std::pow(0.5, mip);
