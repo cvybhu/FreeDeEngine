@@ -21,7 +21,7 @@ int main()
     ImGui_impl_init(Window::window);
 
     //const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj", "mesh/particle.obj", "mesh/pointShadowTest.obj"};
-    const char* meshes2Load[] = {"mesh/lightBallForShading.obj", "mesh/pbrCube.obj", "mesh/light.obj", "mesh/floor.obj"};
+    const char* meshes2Load[] = {"mesh/lightBallForShading.obj", "mesh/pbrCube.obj", "mesh/light.obj", "mesh/floor.obj", "mesh/cerberus.obj", "mesh/cone.obj"};
 
     for(unsigned i = 0; i < sizeof(meshes2Load)/sizeof(const char*); i++)
     {
