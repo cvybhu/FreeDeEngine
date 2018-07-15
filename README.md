@@ -38,5 +38,6 @@ C++ / openGL 3D deffered render engine currently in development.
 ## Building:
 Right now project runs only on linux, but all libraries are platform independent,  
 so it shouldn't be a problem in the slightest to port to other platforms.  
+To build run `make`  
 
 Created thanks to [learnopengl.com](learnopengl.com)
