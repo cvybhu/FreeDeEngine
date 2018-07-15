@@ -1,19 +1,17 @@
 # 3D engine
 ---------------
-C++ / openGL 3D engine currently in development.  
+C++ / openGL 3D deffered render engine currently in development.  
 
 #### Right now it supports following features:  
 * Physically Based Rendering  
 * Image Based Lighting (roughness/metallness workflow)  
 * Normal mapping  
 * Parallax occlusion mapping  
-* Deffered rendering  
 * Custom skyboxes  
 * Gamma correction  
-* HDR  
+* HDR (with exposure)  
 * Bloom  
 * Dynamic shadow mapping  
-* Instanced rendering  
 * Face culling  
 * Different types of light casters  
 * Multiple cameras  
@@ -21,8 +19,10 @@ C++ / openGL 3D engine currently in development.
 * Integrated open GUI library - dear ImGui
 
 #### Coming soon:
+* Better texture filtering (right now its very blurry)
+* Some post-process antialiasing
 * Screen Space Ambient Occlusion  
-* Screen Space reflections  
+* Screen Space Reflections  
 * Complex model loading support  
 * Particles
 
@@ -32,10 +32,11 @@ C++ / openGL 3D engine currently in development.
 
 
 ## Gallery:
-![](readme/image1.png)  
-![](readme/image2.png)  
+![](readme/screenshot.png)  
 
 
 ## Building:
 Right now project runs only on linux, but all libraries are platform independent,  
-so it shouldn't be a problem in the slightest porting to other platforms.
+so it shouldn't be a problem in the slightest to port to other platforms.  
+
+Created thanks to [learnopengl.com](learnopengl.com)

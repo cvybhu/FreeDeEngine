@@ -24,8 +24,17 @@ namespace Window
             glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
         #endif
 
-        window = glfwCreateWindow(width, height, "xertz engine", NULL, NULL);
+        auto monitor = glfwGetPrimaryMonitor();
+        auto mode = glfwGetVideoMode(monitor);
+        glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+        glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+        glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+        glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+        window = glfwCreateWindow(mode->width, mode->height, "Xertz engine", monitor, NULL);
         glfwGetWindowSize(window, &width, &height);
+
+        //window = glfwCreateWindow(width, height, "xertz engine", NULL, NULL);
 
         //glfwSetWindowPos(window, 200, 50);
         if (window == NULL)
