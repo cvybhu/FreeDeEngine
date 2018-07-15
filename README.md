@@ -2,6 +2,9 @@
 ---------------
 C++ / openGL 3D deffered render engine currently in development.  
 
+## Gallery:
+![](readme/screenshot.png)  
+
 #### Right now it supports following features:  
 * Physically Based Rendering  
 * Image Based Lighting (roughness/metallness workflow)  
@@ -28,11 +31,6 @@ C++ / openGL 3D deffered render engine currently in development.
 
 #### Coming not so soon:  
 * Skeletal animations  
-
-
-
-## Gallery:
-![](readme/screenshot.png)  
 
 
 ## Building:
