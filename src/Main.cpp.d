@@ -87,9 +87,9 @@ src/Main.cpp.o: src/Main.cpp src/Window.hpp include/glm/vec2.hpp \
  include/glm/gtc/../gtc/vec1.hpp include/glm/gtc/../gtc/../ext/vec1.hpp \
  include/glm/gtc/../gtc/../ext/../detail/type_vec1.inl \
  include/glm/gtc/../gtc/vec1.inl include/glm/gtc/type_ptr.inl \
- src/Texture.hpp include/stb_image.h src/Mesh.hpp src/Lights.hpp \
- src/FixedSizeMemPool.hpp src/Sprite3D.hpp src/Game.hpp src/Storage.hpp \
- src/Logger.hpp src/TimeTeller.hpp src/Utils.hpp src/imgui/imgui_impl.h
+ src/Texture.hpp src/Mesh.hpp src/Lights.hpp src/FixedSizeMemPool.hpp \
+ src/Sprite3D.hpp src/Game.hpp src/Storage.hpp src/Logger.hpp \
+ src/TimeTeller.hpp src/Utils.hpp src/imgui/imgui_impl.h
 
 src/Window.hpp:
 
@@ -290,8 +290,6 @@ include/glm/gtc/../gtc/vec1.inl:
 include/glm/gtc/type_ptr.inl:
 
 src/Texture.hpp:
-
-include/stb_image.h:
 
 src/Mesh.hpp:
 

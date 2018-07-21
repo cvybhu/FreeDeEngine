@@ -87,8 +87,8 @@ src/Game.cpp.o: src/Game.cpp src/Game.hpp src/Window.hpp \
  include/glm/gtc/../gtc/vec1.hpp include/glm/gtc/../gtc/../ext/vec1.hpp \
  include/glm/gtc/../gtc/../ext/../detail/type_vec1.inl \
  include/glm/gtc/../gtc/vec1.inl include/glm/gtc/type_ptr.inl \
- src/Texture.hpp include/stb_image.h src/Mesh.hpp src/Renderer.hpp \
- src/Lights.hpp src/FixedSizeMemPool.hpp src/Sprite3D.hpp \
+ src/Texture.hpp src/Mesh.hpp src/Renderer.hpp src/Lights.hpp \
+ src/FixedSizeMemPool.hpp src/Sprite3D.hpp \
  include/glm/gtc/matrix_transform.hpp \
  include/glm/gtc/matrix_transform.inl include/glm/gtx/rotate_vector.hpp \
  include/glm/gtx/../glm.hpp include/glm/gtx/../detail/_fixes.hpp \
@@ -308,8 +308,6 @@ include/glm/gtc/../gtc/vec1.inl:
 include/glm/gtc/type_ptr.inl:
 
 src/Texture.hpp:
-
-include/stb_image.h:
 
 src/Mesh.hpp:
 

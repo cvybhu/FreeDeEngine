@@ -89,7 +89,7 @@ src/Storage.cpp.o: src/Storage.cpp src/Storage.hpp src/Shader.hpp \
  include/glm/gtc/../gtc/vec1.hpp include/glm/gtc/../gtc/../ext/vec1.hpp \
  include/glm/gtc/../gtc/../ext/../detail/type_vec1.inl \
  include/glm/gtc/../gtc/vec1.inl include/glm/gtc/type_ptr.inl \
- src/Texture.hpp include/stb_image.h src/Mesh.hpp
+ src/Texture.hpp src/Mesh.hpp
 
 src/Storage.hpp:
 
@@ -284,7 +284,5 @@ include/glm/gtc/../gtc/vec1.inl:
 include/glm/gtc/type_ptr.inl:
 
 src/Texture.hpp:
-
-include/stb_image.h:
 
 src/Mesh.hpp:

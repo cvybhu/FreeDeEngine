@@ -1,6 +1,4 @@
 #pragma once
-
-#include <stb_image.h>
 #include <glad/glad.h>
 
 
@@ -24,6 +22,9 @@ struct Texture //holds pixel data. possible to load from file and on GPU
 
     unsigned char* getPixel(const int& x, const int& y);              //x goes L->R y goes D->U thats kinda prototype
     const unsigned char* getPixel(const int& x, const int& y) const;  //func gives pointer to place where pixel begins
+
+private:
+    void generateTexFile(const char* filePath); //generates .tex file from texture
 };
 
 

@@ -629,8 +629,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     shaders.postProcess.set1Float("exposure", exposure);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mainFbuff.color);
-    //glBindTexture(GL_TEXTURE_2D, deffBuff.normalAmbientOcc);
-    //glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);
+    //glBindTexture(GL_TEXTURE_2D, Storage::getMesh("mesh/pbrCube.obj").albedoTex->glIndx);
     //glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, bloomFbuffs[0].color);

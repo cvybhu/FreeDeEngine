@@ -1,6 +1,6 @@
-src/Texture.cpp.o: src/Texture.cpp src/Texture.hpp include/glad/glad.h \
- include/KHR/khrplatform.h src/Shader.hpp include/glm/gtc/type_ptr.hpp \
- include/glm/gtc/../gtc/quaternion.hpp \
+src/ImageProcessor.cpp.o: src/ImageProcessor.cpp src/ImageProcessor.hpp \
+ include/glad/glad.h include/KHR/khrplatform.h src/Shader.hpp \
+ include/glm/gtc/type_ptr.hpp include/glm/gtc/../gtc/quaternion.hpp \
  include/glm/gtc/../gtc/../mat3x3.hpp \
  include/glm/gtc/../gtc/../detail/setup.hpp \
  include/glm/gtc/../gtc/../detail/../simd/platform.h \
@@ -89,10 +89,9 @@ src/Texture.cpp.o: src/Texture.cpp src/Texture.hpp include/glad/glad.h \
  include/glm/gtc/../gtc/vec1.hpp include/glm/gtc/../gtc/../ext/vec1.hpp \
  include/glm/gtc/../gtc/../ext/../detail/type_vec1.inl \
  include/glm/gtc/../gtc/vec1.inl include/glm/gtc/type_ptr.inl \
- src/Logger.hpp include/glm/gtc/matrix_transform.hpp \
- include/glm/gtc/matrix_transform.inl include/stb_image.h src/texFile.hpp
+ src/Logger.hpp
 
-src/Texture.hpp:
+src/ImageProcessor.hpp:
 
 include/glad/glad.h:
 
@@ -285,11 +284,3 @@ include/glm/gtc/../gtc/vec1.inl:
 include/glm/gtc/type_ptr.inl:
 
 src/Logger.hpp:
-
-include/glm/gtc/matrix_transform.hpp:
-
-include/glm/gtc/matrix_transform.inl:
-
-include/stb_image.h:
-
-src/texFile.hpp:

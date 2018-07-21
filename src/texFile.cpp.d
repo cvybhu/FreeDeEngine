@@ -1,27 +1,26 @@
-src/Texture.cpp.o: src/Texture.cpp src/Texture.hpp include/glad/glad.h \
- include/KHR/khrplatform.h src/Shader.hpp include/glm/gtc/type_ptr.hpp \
+src/texFile.cpp.o: src/texFile.cpp include/stb_image.h src/Logger.hpp \
+ include/glm/vec3.hpp include/glm/detail/setup.hpp \
+ include/glm/detail/../simd/platform.h include/glm/detail/type_vec3.hpp \
+ include/glm/detail/type_vec.hpp include/glm/detail/qualifier.hpp \
+ include/glm/detail/setup.hpp include/glm/detail/type_int.hpp \
+ include/glm/detail/compute_vector_relational.hpp \
+ include/glm/detail/type_vec3.inl include/glad/glad.h \
+ include/KHR/khrplatform.h src/Utils.hpp src/ImageProcessor.hpp \
+ src/Shader.hpp include/glm/gtc/type_ptr.hpp \
  include/glm/gtc/../gtc/quaternion.hpp \
  include/glm/gtc/../gtc/../mat3x3.hpp \
  include/glm/gtc/../gtc/../detail/setup.hpp \
- include/glm/gtc/../gtc/../detail/../simd/platform.h \
  include/glm/gtc/../gtc/../detail/type_mat3x3.hpp \
  include/glm/gtc/../gtc/../detail/../fwd.hpp \
  include/glm/gtc/../gtc/../detail/../detail/setup.hpp \
- include/glm/gtc/../gtc/../detail/../detail/type_int.hpp \
- include/glm/gtc/../gtc/../detail/../detail/setup.hpp \
  include/glm/gtc/../gtc/../detail/../detail/type_float.hpp \
- include/glm/gtc/../gtc/../detail/../detail/type_vec.hpp \
- include/glm/gtc/../gtc/../detail/../detail/qualifier.hpp \
- include/glm/gtc/../gtc/../detail/../detail/compute_vector_relational.hpp \
+ include/glm/gtc/../gtc/../detail/../detail/setup.hpp \
  include/glm/gtc/../gtc/../detail/../detail/type_mat.hpp \
- include/glm/gtc/../gtc/../detail/type_vec3.hpp \
- include/glm/gtc/../gtc/../detail/type_vec3.inl \
  include/glm/gtc/../gtc/../detail/type_mat3x3.inl \
  include/glm/gtc/../gtc/../detail/../matrix.hpp \
  include/glm/gtc/../gtc/../detail/../vec2.hpp \
  include/glm/gtc/../gtc/../detail/../detail/type_vec2.hpp \
  include/glm/gtc/../gtc/../detail/../detail/type_vec2.inl \
- include/glm/gtc/../gtc/../detail/../vec3.hpp \
  include/glm/gtc/../gtc/../detail/../vec4.hpp \
  include/glm/gtc/../gtc/../detail/../detail/type_vec4.hpp \
  include/glm/gtc/../gtc/../detail/../detail/type_vec4.inl \
@@ -89,14 +88,39 @@ src/Texture.cpp.o: src/Texture.cpp src/Texture.hpp include/glad/glad.h \
  include/glm/gtc/../gtc/vec1.hpp include/glm/gtc/../gtc/../ext/vec1.hpp \
  include/glm/gtc/../gtc/../ext/../detail/type_vec1.inl \
  include/glm/gtc/../gtc/vec1.inl include/glm/gtc/type_ptr.inl \
- src/Logger.hpp include/glm/gtc/matrix_transform.hpp \
- include/glm/gtc/matrix_transform.inl include/stb_image.h src/texFile.hpp
+ src/Storage.hpp src/Texture.hpp src/Mesh.hpp src/Window.hpp
 
-src/Texture.hpp:
+include/stb_image.h:
+
+src/Logger.hpp:
+
+include/glm/vec3.hpp:
+
+include/glm/detail/setup.hpp:
+
+include/glm/detail/../simd/platform.h:
+
+include/glm/detail/type_vec3.hpp:
+
+include/glm/detail/type_vec.hpp:
+
+include/glm/detail/qualifier.hpp:
+
+include/glm/detail/setup.hpp:
+
+include/glm/detail/type_int.hpp:
+
+include/glm/detail/compute_vector_relational.hpp:
+
+include/glm/detail/type_vec3.inl:
 
 include/glad/glad.h:
 
 include/KHR/khrplatform.h:
+
+src/Utils.hpp:
+
+src/ImageProcessor.hpp:
 
 src/Shader.hpp:
 
@@ -108,31 +132,17 @@ include/glm/gtc/../gtc/../mat3x3.hpp:
 
 include/glm/gtc/../gtc/../detail/setup.hpp:
 
-include/glm/gtc/../gtc/../detail/../simd/platform.h:
-
 include/glm/gtc/../gtc/../detail/type_mat3x3.hpp:
 
 include/glm/gtc/../gtc/../detail/../fwd.hpp:
 
 include/glm/gtc/../gtc/../detail/../detail/setup.hpp:
 
-include/glm/gtc/../gtc/../detail/../detail/type_int.hpp:
+include/glm/gtc/../gtc/../detail/../detail/type_float.hpp:
 
 include/glm/gtc/../gtc/../detail/../detail/setup.hpp:
 
-include/glm/gtc/../gtc/../detail/../detail/type_float.hpp:
-
-include/glm/gtc/../gtc/../detail/../detail/type_vec.hpp:
-
-include/glm/gtc/../gtc/../detail/../detail/qualifier.hpp:
-
-include/glm/gtc/../gtc/../detail/../detail/compute_vector_relational.hpp:
-
 include/glm/gtc/../gtc/../detail/../detail/type_mat.hpp:
-
-include/glm/gtc/../gtc/../detail/type_vec3.hpp:
-
-include/glm/gtc/../gtc/../detail/type_vec3.inl:
 
 include/glm/gtc/../gtc/../detail/type_mat3x3.inl:
 
@@ -143,8 +153,6 @@ include/glm/gtc/../gtc/../detail/../vec2.hpp:
 include/glm/gtc/../gtc/../detail/../detail/type_vec2.hpp:
 
 include/glm/gtc/../gtc/../detail/../detail/type_vec2.inl:
-
-include/glm/gtc/../gtc/../detail/../vec3.hpp:
 
 include/glm/gtc/../gtc/../detail/../vec4.hpp:
 
@@ -284,12 +292,10 @@ include/glm/gtc/../gtc/vec1.inl:
 
 include/glm/gtc/type_ptr.inl:
 
-src/Logger.hpp:
+src/Storage.hpp:
 
-include/glm/gtc/matrix_transform.hpp:
+src/Texture.hpp:
 
-include/glm/gtc/matrix_transform.inl:
+src/Mesh.hpp:
 
-include/stb_image.h:
-
-src/texFile.hpp:
+src/Window.hpp:

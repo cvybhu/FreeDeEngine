@@ -87,9 +87,9 @@ src/Renderer.cpp.o: src/Renderer.cpp src/Renderer.hpp include/glad/glad.h \
  include/glm/gtc/../gtc/vec1.hpp include/glm/gtc/../gtc/../ext/vec1.hpp \
  include/glm/gtc/../gtc/../ext/../detail/type_vec1.inl \
  include/glm/gtc/../gtc/vec1.inl include/glm/gtc/type_ptr.inl \
- src/Texture.hpp include/stb_image.h src/Mesh.hpp src/Lights.hpp \
- src/FixedSizeMemPool.hpp src/Sprite3D.hpp src/Window.hpp src/Storage.hpp \
- src/Utils.hpp src/Logger.hpp include/glm/gtc/matrix_transform.hpp \
+ src/Texture.hpp src/Mesh.hpp src/Lights.hpp src/FixedSizeMemPool.hpp \
+ src/Sprite3D.hpp src/Window.hpp src/Storage.hpp src/Utils.hpp \
+ src/Logger.hpp include/glm/gtc/matrix_transform.hpp \
  include/glm/gtc/matrix_transform.inl
 
 src/Renderer.hpp:
@@ -289,8 +289,6 @@ include/glm/gtc/../gtc/vec1.inl:
 include/glm/gtc/type_ptr.inl:
 
 src/Texture.hpp:
-
-include/stb_image.h:
 
 src/Mesh.hpp:
 

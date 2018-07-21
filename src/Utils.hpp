@@ -4,6 +4,7 @@
 #include <glm/vec3.hpp>
 #include <iostream>
 #include <assert.h>
+#include <glad/glad.h>
 
 #define showOgl(a) GLint xDD##a; glGetIntegerv(a, &xDD##a); std::cout << #a << ": " << xDD##a << '\n';
 #define checkGlError() {GLenum err; bool wasError = false; while((err = glGetError()) != GL_NO_ERROR){wasError = true; std::cout << "[ERRRRRROOOOORRRRRRRRRR] OpenGL error in "  << __FILE__ << "(" << __LINE__ << ")  error code: " << err << std::endl;} assert(!wasError);}
@@ -45,6 +46,8 @@ std::string convert2String(const float&);
 std::string convert2String(const double&);
 std::string convert2String(const unsigned&);
 std::string convert2String(const unsigned long long&);
+
+std::pair<GLenum, GLenum> getTexInternalFormat(int nrChannels, bool gammaCorrection);
 
 
 

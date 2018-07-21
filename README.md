@@ -23,6 +23,7 @@ C++ / openGL 3D deffered render engine currently in development.
 
 #### Coming soon:
 * Better texture filtering (right now its very blurry)
+* Smooth shading support
 * Some post-process antialiasing
 * Screen Space Ambient Occlusion  
 * Screen Space Reflections  

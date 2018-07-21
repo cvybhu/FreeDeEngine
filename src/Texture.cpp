@@ -2,6 +2,12 @@
 #include <Shader.hpp>
 #include <Logger.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <string>
+#include <stdio.h>
+
+#include <stb_image.h>
+#include <texFile.hpp>
+
 
 namespace Storage
 {
@@ -11,15 +17,25 @@ namespace Storage
 
 void Texture::loadToRAM(const char* filePath)
 {
-    stbi_set_flip_vertically_on_load(true);
-    //stbi_set_flip_horizontally_on_load(true);
-    data = stbi_load(filePath, &width, &height, &nrChannels, 0);
-
-    if (!data)
+    std::string texFilePath(filePath);
+    int dotPos = texFilePath.size()-1;
+    while(texFilePath[dotPos] != '.')
     {
-        std::cout << "[ERROR TEX] Failed to load texture " << filePath << "\n";
-        return;
+        texFilePath[dotPos] = 0;
+        dotPos--;
     }
+
+    memcpy(&texFilePath[0] + dotPos, ".tex", 4);
+
+    std::vector<void*> dataVec;
+    if(!texFile::load(texFilePath.c_str(), dataVec, width, height, nrChannels))
+        if(!texFile::create(filePath, texFilePath.c_str()) || !texFile::load(texFilePath.c_str(), dataVec, width, height, nrChannels))
+        {
+            std::cout << "[ERROR] - Failed to load " << filePath << "!!\n";
+            return;
+        }
+    
+    data = (unsigned char*)dataVec[0];
 
     isOnRAM = true;
     isNormalMap = false;
@@ -28,6 +44,7 @@ void Texture::loadToRAM(const char* filePath)
 }
 
 #include <glm/vec3.hpp>
+
 
 void Texture::loadToRamAsNormalMap(const char* filePath)
 {
@@ -77,6 +94,7 @@ void Texture::loadToGPU(bool fixGamma)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
 
     GLenum types[2];
     types[0] = types[1] = 0;
@@ -139,6 +157,16 @@ void Texture::unloadFromGPU()
 
 unsigned char* Texture::getPixel(const int& x, const int& y){return data + nrChannels*sizeof(unsigned char)*y*width + nrChannels*sizeof(unsigned char*)*x;}
 const unsigned char* Texture::getPixel(const int& x, const int& y) const {return data + nrChannels*sizeof(unsigned char)*y*width + nrChannels*sizeof(unsigned char*)*x;}
+
+
+void Texture::generateTexFile(const char* fileName)
+{
+
+
+}
+
+
+
 
 
 
