@@ -40,7 +40,7 @@ namespace texFile
         checkGlError();
 
         ImageProcessor imageProcessor(width, height, internalFormat.first, internalFormat.second, GL_UNSIGNED_BYTE, imageData);
-        auto texFilterShader = Storage::getShader("src/shaders/texFilter/texFilter");
+        auto texFilterShader = Storage<Shader>::get("src/shaders/texFilter/texFilter");
         texFilterShader.use();
         imageProcessor.render();
         

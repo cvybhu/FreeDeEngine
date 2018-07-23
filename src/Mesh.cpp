@@ -1,5 +1,6 @@
 #include <Mesh.hpp>
 
+#include <glm/glm.hpp>
 #include <glad/glad.h>
 #include <Storage.hpp>
 #include <fstream>
@@ -43,7 +44,7 @@ void Mesh::loadToRAM(const char* filePath)
     auto loadTex = [&file](Texture*& tex){
         std::string texPath;
         file >> texPath;
-        tex = &Storage::getTex(texPath.c_str());
+        tex = &Storage<Texture>::get(texPath.c_str());
 
         if(!tex->isOnRAM)
             tex->loadToRAM(texPath.c_str());
@@ -122,7 +123,7 @@ void Mesh::loadToRAM(const char* filePath)
         {
             std::string texPath;
             file >> texPath;
-            normalTex = &Storage::getTex(texPath.c_str());
+            normalTex = &Storage<Texture>::get(texPath.c_str());
 
             if(!normalTex->isOnRAM)
                 normalTex->loadToRamAsNormalMap(texPath.c_str());

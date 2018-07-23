@@ -33,16 +33,16 @@ namespace Game
 
         render.init({Window::width, Window::height}, 10);
 
-        CubeTexture& skyboxMountLake = Storage::getCubeTex("src/tex/mountainsCube");
+        CubeTexture& skyboxMountLake = Storage<CubeTexture>::get("src/tex/mountainsCube");
         skyboxMountLake.loadToRAM("tex/mountainsCube");
         skyboxMountLake.loadToGPU(true);
         render.currentSkybox = &skyboxMountLake;
 
-        Sprite3D* floor = render.addSprite3D(Storage::getMesh("mesh/floor.obj"));
+        Sprite3D* floor = render.addSprite3D(Storage<Mesh>::get("mesh/floor.obj"));
         floor->model = glm::translate(glm::mat4(1), glm::vec3(0, 0, -1));
 
 
-        Sprite3D* pbrCube = render.addSprite3D(Storage::getMesh("mesh/pbrCube.obj"));
+        Sprite3D* pbrCube = render.addSprite3D(Storage<Mesh>::get("mesh/pbrCube.obj"));
         pbrCube->model = glm::mat4(1);
 
         light0 = render.addPointLight();
@@ -64,9 +64,9 @@ namespace Game
         //render.dirLight.setupShadow({50, 50}, {7, 0, 0}, 100.f, {1024, 1024});
         //render.dirLight.activateShadow();
 
-        Sprite3D* cerber = render.addSprite3D(Storage::getMesh("mesh/cerberus.obj"));
+        Sprite3D* cerber = render.addSprite3D(Storage<Mesh>::get("mesh/cerberus.obj"));
         cerber->model = glm::rotate(glm::translate(glm::scale(glm::mat4(1), glm::vec3(5)), glm::vec3(0, 0, 1)), glm::radians(90.f), glm::vec3(1, 0, 0));
-        Sprite3D* cone = render.addSprite3D(Storage::getMesh("mesh/cone.obj"));
+        Sprite3D* cone = render.addSprite3D(Storage<Mesh>::get("mesh/cone.obj"));
         cone-> model = glm::scale(glm::translate(glm::mat4(1), glm::vec3(4+1, -3, 0.9)), glm::vec3(0.25));
     }
 

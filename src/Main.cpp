@@ -24,8 +24,7 @@ int main()
 
     for(unsigned i = 0 ;i < sizeof(shaders2Load)/sizeof(const char*); i++)
     {
-        Shader& shader = Storage::getShader(shaders2Load[i]);
-        shader.load(shaders2Load[i]);
+        Storage<Shader>::add(shaders2Load[i]).load(shaders2Load[i]);
     }
 
     //const char* meshes2Load[] = {"mesh/spacePlane.obj", "mesh/light.obj", "mesh/grass.obj", "mesh/stonePlace.obj", "mesh/particle.obj", "mesh/pointShadowTest.obj"};
@@ -33,7 +32,7 @@ int main()
 
     for(unsigned i = 0; i < sizeof(meshes2Load)/sizeof(const char*); i++)
     {
-        Mesh& mesh = Storage::getMesh(meshes2Load[i]);
+        Mesh& mesh = Storage<Mesh>::add(meshes2Load[i]);
         mesh.loadToRAM(meshes2Load[i]);
         mesh.loadToGPU();
     }

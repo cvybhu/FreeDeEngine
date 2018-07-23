@@ -45,7 +45,7 @@ void Renderer::setupShaders()
     genUBO(shaderLightDataUBO, sizeof(ShaderLightData), 1);
 
 //deffered   
-    shaders.deffered = Storage::getShader("src/shaders/deffered");
+    shaders.deffered = Storage<Shader>::get("src/shaders/deffered");
     shaders.deffered.use();
     shaders.deffered.set1Int("albedoTex", 0);
     shaders.deffered.set1Int("metallicTex", 1);
@@ -59,7 +59,7 @@ void Renderer::setupShaders()
 
 //IBL
 
-    shaders.IBL = Storage::getShader("src/shaders/IBL");
+    shaders.IBL = Storage<Shader>::get("src/shaders/IBL");
     shaders.IBL.use();
 
     shaders.IBL.set1Int("albedoMetal", 0);
@@ -75,7 +75,7 @@ void Renderer::setupShaders()
     shaders.IBL.setUBO("posData", 0);
 
 //dirLight
-    shaders.dirLight = Storage::getShader("src/shaders/dirLight");
+    shaders.dirLight = Storage<Shader>::get("src/shaders/dirLight");
     shaders.dirLight.use();
 
     shaders.dirLight.set1Int("albedoMetal", 0);
@@ -85,7 +85,7 @@ void Renderer::setupShaders()
     shaders.dirLight.setUBO("posData", 0);
 
 //pointLight
-    shaders.pointLight = Storage::getShader("src/shaders/pointLight");
+    shaders.pointLight = Storage<Shader>::get("src/shaders/pointLight");
     shaders.pointLight.use();
 
     shaders.pointLight.set1Int("albedoMetal", 0);
@@ -96,33 +96,33 @@ void Renderer::setupShaders()
     shaders.pointLight.setUBO("posData", 0);
 
 //skybox
-    shaders.skybox = Storage::getShader("src/shaders/skybox");
+    shaders.skybox = Storage<Shader>::get("src/shaders/skybox");
     shaders.skybox.use();
     shaders.skybox.set1Int("normalAmbientOcc", 2);
     shaders.skybox.set1Int("skybox", 7);
 
 //justColor
-    shaders.justColor = Storage::getShader("src/shaders/justColor");
+    shaders.justColor = Storage<Shader>::get("src/shaders/justColor");
     shaders.justColor.use();
 
     shaders.justColor.setUBO("posData", 0);
 
 //point light shadows
-    shaders.pointLightShadow = Storage::getShader("src/shaders/pointLightShadow");
+    shaders.pointLightShadow = Storage<Shader>::get("src/shaders/pointLightShadow");
 
 //dir light shadows
-    shaders.dirLightShadow = Storage::getShader("src/shaders/dirLightShadow");
+    shaders.dirLightShadow = Storage<Shader>::get("src/shaders/dirLightShadow");
 
 //bloomSelect
-    shaders.bloomSelect = Storage::getShader("src/shaders/bloomSelect");
+    shaders.bloomSelect = Storage<Shader>::get("src/shaders/bloomSelect");
     shaders.bloomSelect.use();
     shaders.bloomSelect.set1Int("screenTex", 4);
 
 //gaus blur (for bloom)
-    shaders.gausBlur = Storage::getShader("src/shaders/gausBlur");
+    shaders.gausBlur = Storage<Shader>::get("src/shaders/gausBlur");
 
 //Postprocess
-    shaders.postProcess = Storage::getShader("src/shaders/postProcess");
+    shaders.postProcess = Storage<Shader>::get("src/shaders/postProcess");
     shaders.postProcess.use();
     shaders.postProcess.set1Int("screenTex", 0);
     shaders.postProcess.set1Int("bloomTex", 1);
@@ -521,7 +521,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     
     //point lights
     shaders.pointLight.use();
-    Mesh& lightBall = Storage::getMesh("mesh/lightBallForShading.obj");
+    Mesh& lightBall = Storage<Mesh>::get("mesh/lightBallForShading.obj");
     glBindVertexArray(lightBall.VAO);
     glCullFace(GL_FRONT);
 
@@ -570,7 +570,7 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     //point lights drawing
     shaders.justColor.use();
 
-    Mesh& lightMesh = Storage::getMesh("mesh/light.obj");
+    Mesh& lightMesh = Storage<Mesh>::get("mesh/light.obj");
     glBindVertexArray(lightMesh.VAO);
 
 
@@ -727,7 +727,7 @@ void Renderer::generateBRDFLUTTex()
     glBindFramebuffer(GL_FRAMEBUFFER, fbuff);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
 
-    Shader& genShader = Storage::getShader("src/shaders/brdfLUTGen");
+    Shader& genShader = Storage<Shader>::get("src/shaders/brdfLUTGen");
     genShader.use();
 
     glViewport(0, 0, 512, 512);

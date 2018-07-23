@@ -1,5 +1,6 @@
 #include <Texture.hpp>
 #include <Shader.hpp>
+#include <Storage.hpp>
 #include <Logger.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
@@ -7,13 +8,6 @@
 
 #include <stb_image.h>
 #include <texFile.hpp>
-
-
-namespace Storage
-{
-    Shader& getShader(const char*);
-}
-
 
 void Texture::loadToRAM(const char* filePath)
 {
@@ -348,7 +342,7 @@ void EnvironmentTex::generateCubeMaps(int resolution)
     };
 //
     generateCubeMap(cubeMap, resolution);
-    Shader& convert = Storage::getShader("src/shaders/streched2cube");
+    Shader& convert = Storage<Shader>::get("src/shaders/streched2cube");
     convert.use();
     convert.set1Int("theTex", 0);
     convert.setMat4("projection", glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f));
@@ -395,7 +389,7 @@ void EnvironmentTex::generateCubeMaps(int resolution)
     generateCubeMap(diffRadianceMap, diffRadRes); 
 
 
-    Shader& diffRadGen = Storage::getShader("src/shaders/diffRadGen");
+    Shader& diffRadGen = Storage<Shader>::get("src/shaders/diffRadGen");
     diffRadGen.use();
     diffRadGen.set1Int("envTex", 0);
     diffRadGen.setMat4("projection", glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f));
@@ -430,7 +424,7 @@ void EnvironmentTex::generateCubeMaps(int resolution)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
-    Shader& prefilterGen = Storage::getShader("src/shaders/prefilterGen");
+    Shader& prefilterGen = Storage<Shader>::get("src/shaders/prefilterGen");
     prefilterGen.use();
     prefilterGen.setMat4("projection", glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f));
     prefilterGen.set1Int("envTex", 0);
