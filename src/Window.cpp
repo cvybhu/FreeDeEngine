@@ -39,7 +39,7 @@ namespace Window
         //glfwSetWindowPos(window, 200, 50);
         if (window == NULL)
         {
-            std::cout << "Failed to create GLFW window\n";
+            say << "Failed to create GLFW window\n";
             glfwTerminate();
         }
 
@@ -51,7 +51,7 @@ namespace Window
 
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
-            std::cout << "Failed to initialize GLAD\n";
+            say << "Failed to initialize GLAD\n";
         }
         glViewport(0, 0, width, height);
 
@@ -77,7 +77,7 @@ namespace Window
         released
     };
 
-    std::ostream& operator<<(std::ostream& os, const keyState& kState){return (kState == keyState::clicked ? std::cout << "clicked" : kState == keyState::repeated ? std::cout << "repeated" : std::cout << "released");}
+    //std::ostream& operator<<(std::ostream& os, const keyState& kState){return (kState == keyState::clicked ? say << "clicked" : kState == keyState::repeated ? say << "repeated" : say << "released");}
 
     std::vector<keyState> keyStates;
 

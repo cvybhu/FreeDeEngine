@@ -5,9 +5,10 @@
 #include <iostream>
 #include <assert.h>
 #include <glad/glad.h>
+#include <Logger.hpp>
 
-#define showOgl(a) GLint xDD##a; glGetIntegerv(a, &xDD##a); std::cout << #a << ": " << xDD##a << '\n';
-#define checkGlError() {GLenum err; bool wasError = false; while((err = glGetError()) != GL_NO_ERROR){wasError = true; std::cout << "[ERRRRRROOOOORRRRRRRRRR] OpenGL error in "  << __FILE__ << "(" << __LINE__ << ")  error code: " << err << std::endl;} assert(!wasError);}
+#define showOgl(a) GLint xDD##a; glGetIntegerv(a, &xDD##a); say << #a << ": " << xDD##a << '\n';
+#define checkGlError() {GLenum err; bool wasError = false; while((err = glGetError()) != GL_NO_ERROR){wasError = true; /*say << "[ERRRRRROOOOORRRRRRRRRR] OpenGL error in "  << __FILE__ << "(" << __LINE__ << ")  error code: " << err << '\n';*/} assert(!wasError);}
 
 
 std::string readFile(const char* path); //puts file in std::string

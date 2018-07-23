@@ -22,8 +22,8 @@ void Shader::load(const std::string& path)
     if(!success)
     {
         glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "[SHADER ERROR] - failed to compile shader " << (path + ".vs") << "!\n";
-        std::cout << "log:\n" << infoLog << '\n';
+        say << "[SHADER ERROR] - failed to compile shader " << (path + ".vs") << "!\n";
+        say << "log:\n" << infoLog << '\n';
         return;
     }
 
@@ -48,8 +48,8 @@ void Shader::load(const std::string& path)
         if(!success)
         {
             glGetShaderInfoLog(geoShader, 512, NULL, infoLog);
-            std::cout << "[SHADER ERROR] - failed to compile shader " << (path + ".gs") << "!\n";
-            std::cout << "log:\n" << infoLog << '\n';
+            say << "[SHADER ERROR] - failed to compile shader " << (path + ".gs") << "!\n";
+            say << "log:\n" << infoLog << '\n';
             return;
         }
     }
@@ -70,8 +70,8 @@ void Shader::load(const std::string& path)
     if(!success)
     {
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "[SHADER ERROR] - failed to compile shader " << (path + ".fs") << "!\n";
-        std::cout << "log:\n" << infoLog << '\n';
+        say << "[SHADER ERROR] - failed to compile shader " << (path + ".fs") << "!\n";
+        say << "log:\n" << infoLog << '\n';
         return;
     }
 
@@ -90,8 +90,8 @@ void Shader::load(const std::string& path)
     if(!success)
     {
         glGetProgramInfoLog(program, 512, NULL, infoLog);
-        std::cout << "[SHADER ERROR] - failed to link shader program for shader: " << path << "!\n";
-        std::cout << "log:\n" << infoLog << '\n';
+        say << "[SHADER ERROR] - failed to link shader program for shader: " << path << "!\n";
+        say << "log:\n" << infoLog << '\n';
     }
 
     glDeleteShader(vertexShader);
@@ -101,5 +101,5 @@ void Shader::load(const std::string& path)
 
     glDeleteShader(fragmentShader);
 
-    std::cout << "[SHADERLOAD]Succesfully loaded " << path << "!\n";
+    say << "[SHADERLOAD]Succesfully loaded " << path << "!\n";
 }

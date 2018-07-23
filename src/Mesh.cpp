@@ -140,7 +140,7 @@ void Mesh::loadToRAM(const char* filePath)
 
     calculateTangents();
 
-    std::cout << "[MESHLOAD]Succesfully loaded " << filePath << " (" << verts.size() << " vertices)\n";
+    say << "[MESHLOAD]Succesfully loaded " << filePath << " (" << verts.size() << " vertices)\n";
 
     vertsNum = verts.size();
 }

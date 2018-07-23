@@ -89,7 +89,7 @@ src/Shader.cpp.o: src/Shader.cpp src/Shader.hpp include/glad/glad.h \
  include/glm/gtc/../gtc/vec1.hpp include/glm/gtc/../gtc/../ext/vec1.hpp \
  include/glm/gtc/../gtc/../ext/../detail/type_vec1.inl \
  include/glm/gtc/../gtc/vec1.inl include/glm/gtc/type_ptr.inl \
- src/Utils.hpp
+ src/Utils.hpp src/Logger.hpp
 
 src/Shader.hpp:
 
@@ -282,3 +282,5 @@ include/glm/gtc/../gtc/vec1.inl:
 include/glm/gtc/type_ptr.inl:
 
 src/Utils.hpp:
+
+src/Logger.hpp:

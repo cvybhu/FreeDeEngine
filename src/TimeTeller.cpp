@@ -40,7 +40,7 @@ void TimeTeller::tell()
 {
     if(getTimeFrom(lastTellTime) >= tellCooldown)
     {
-        std::cout << name << std::setprecision(5) << std::fixed << ": " << maxTime*1000.0 << "ms\n";
+        say << name << std::setprecision(5) << std::fixed << ": " << maxTime*1000.0 << "ms\n";
         lastTellTime = cock.now();
         maxTime = -1;
     }

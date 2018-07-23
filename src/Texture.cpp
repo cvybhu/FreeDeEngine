@@ -31,7 +31,7 @@ void Texture::loadToRAM(const char* filePath)
     if(!texFile::load(texFilePath.c_str(), dataVec, width, height, nrChannels))
         if(!texFile::create(filePath, texFilePath.c_str()) || !texFile::load(texFilePath.c_str(), dataVec, width, height, nrChannels))
         {
-            std::cout << "[ERROR] - Failed to load " << filePath << "!!\n";
+            say << "[ERROR] - Failed to load " << filePath << "!!\n";
             return;
         }
     
@@ -40,7 +40,7 @@ void Texture::loadToRAM(const char* filePath)
     isOnRAM = true;
     isNormalMap = false;
 
-    std::cout << "[TEXLOAD]Succesfully loaded " << filePath << "!\n";
+    say << "[TEXLOAD]Succesfully loaded " << filePath << "!\n";
 }
 
 #include <glm/vec3.hpp>
@@ -54,7 +54,7 @@ void Texture::loadToRamAsNormalMap(const char* filePath)
 
     if (!data)
     {
-        std::cout << "[ERROR TEX] Failed to load texture " << filePath << "\n";
+        say << "[ERROR TEX] Failed to load texture " << filePath << "\n";
         return;
     }
 
@@ -79,9 +79,9 @@ void Texture::loadToRamAsNormalMap(const char* filePath)
 
     isOnRAM = true;
 
-    std::cout << glm::normalize(average) << '\n';
+    say << glm::normalize(average) << '\n';
 
-    std::cout << "[TEXLOAD]Succesfully loaded " << filePath << "!\n";
+    say << "[TEXLOAD]Succesfully loaded " << filePath << "!\n";
 }
 
 
@@ -184,7 +184,7 @@ void CubeTexture::loadToRAM(const char* fileName)
     for(int i = 0; i < 6; i++)
         if(!data[i])
         {
-            std::cout << "[TEXLOAD] Failed to load " << fileName << "!!!!!!!!!!!!!!\n";
+            say << "[TEXLOAD] Failed to load " << fileName << "!!!!!!!!!!!!!!\n";
         }
 
     isOnRAM = true;
@@ -241,7 +241,7 @@ void EnvironmentTex::loadToRAM(const char* filePath)
     data = stbi_loadf(filePath,  &width, &height, &nrComponents, 0);
 
     if (!data)
-        std::cout << "Failed to load "<< filePath << " image." << std::endl;
+        say << "Failed to load "<< filePath << " image." << '\n';
 };
 
 void EnvironmentTex::loadToGPU()
@@ -369,7 +369,7 @@ void EnvironmentTex::generateCubeMaps(int resolution)
     }
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Fbuff not complete!!!!!\n";
+        say << "Fbuff not complete!!!!!\n";
 
 
 
@@ -414,7 +414,7 @@ void EnvironmentTex::generateCubeMaps(int resolution)
     }
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Fbuff not complete!!!!!\n";
+        say << "Fbuff not complete!!!!!\n";
 
 //
     int prefilterRes = 400;

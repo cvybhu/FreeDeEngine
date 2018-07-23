@@ -40,7 +40,7 @@ int main()
 
     Game::init();
 
-    std::cout<<"LOAD AND INIT TIME: "<< (glfwGetTime() - loadStartTime)*1000<<"ms\n";
+    say<<"LOAD AND INIT TIME: "<< (glfwGetTime() - loadStartTime)*1000<<"ms\n";
 
     checkGlError();
 

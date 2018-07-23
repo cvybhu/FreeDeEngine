@@ -325,7 +325,7 @@ void Renderer::setupMeshForDraw(const Mesh& mesh)
     else
     {
         glBindTexture(GL_TEXTURE_2D, defaultTexs.albedo);
-        //std::cout << "No albedo!!\n";
+        //say << "No albedo!!\n";
 
     }
 

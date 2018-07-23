@@ -21,7 +21,7 @@ namespace texFile
 
         if(!imageData)
         {
-            std::cout << "[ERROR(TEXCREATE)] Failed to load " << imagePath << "!!\n";
+            say << "[ERROR(TEXCREATE)] Failed to load " << imagePath << "!!\n";
             return 0;
         }
 
@@ -57,7 +57,7 @@ namespace texFile
         fwrite(imageData, sizeof(char), width*height*nrChannels, file);
         fclose(file);
 
-        std::cout << "[TEXCREATE] - succesfully created " << texFilePath << " \n";
+        say << "[TEXCREATE] - succesfully created " << texFilePath << " \n";
 
         stbi_image_free(imageData);
 
@@ -70,7 +70,7 @@ namespace texFile
 
         if(!file)
         {
-            std::cout << "[ERROR] failed to load " << filePath << "!!\n";
+            say << "[ERROR] failed to load " << filePath << "!!\n";
             return 0;
         }
 

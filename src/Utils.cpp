@@ -12,7 +12,7 @@ std::string readFile(const char* path)
 
     if(!file.is_open())
     {
-        std::cout << "failed to open " << path << "!\n";
+        say << "failed to open " << path << "!\n";
         return "";
     }
 
