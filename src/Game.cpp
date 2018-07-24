@@ -33,7 +33,7 @@ namespace Game
 
         render.init({Window::width, Window::height}, 10);
 
-        CubeTexture& skyboxMountLake = Storage<CubeTexture>::get("src/tex/mountainsCube");
+        CubeTexture& skyboxMountLake = Storage<CubeTexture>::add("src/tex/mountainsCube");
         skyboxMountLake.loadToRAM("tex/mountainsCube");
         skyboxMountLake.loadToGPU(true);
         render.currentSkybox = &skyboxMountLake;

@@ -44,7 +44,11 @@ void Mesh::loadToRAM(const char* filePath)
     auto loadTex = [&file](Texture*& tex){
         std::string texPath;
         file >> texPath;
-        tex = &Storage<Texture>::get(texPath.c_str());
+
+        if(Storage<Texture>::isThere(texPath.c_str()))
+            tex = &Storage<Texture>::get(texPath.c_str());
+        else
+            tex = &Storage<Texture>::add(texPath.c_str());
 
         if(!tex->isOnRAM)
             tex->loadToRAM(texPath.c_str());
@@ -123,7 +127,10 @@ void Mesh::loadToRAM(const char* filePath)
         {
             std::string texPath;
             file >> texPath;
-            normalTex = &Storage<Texture>::get(texPath.c_str());
+            if(Storage<Texture>::isThere(texPath.c_str()))
+                normalTex = &Storage<Texture>::get(texPath.c_str());
+            else
+                normalTex = &Storage<Texture>::add(texPath.c_str());
 
             if(!normalTex->isOnRAM)
                 normalTex->loadToRamAsNormalMap(texPath.c_str());
