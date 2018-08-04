@@ -2,7 +2,7 @@
 
 out vec4 color;
 
-sampler2D prevTex 
+uniform sampler2D prevTex 
 
 void main()
 {

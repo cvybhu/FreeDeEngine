@@ -1,10 +1,13 @@
 #pragma once
 #include <glad/glad.h>
+#include <vector>
 
 
 struct Texture //holds pixel data. possible to load from file and on GPU
 {
     unsigned char* data;    //data is stored as 1D array (R,G,B,A,X,  R,G,B,A,X, etc...)
+    std::vector<unsigned char*> mipmaps;
+
     int width, height;
     int nrChannels;         //R G B is 3 channels, with alpha its 4 etc.
 
