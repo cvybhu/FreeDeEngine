@@ -27,14 +27,13 @@ namespace texFile
 
         auto internalFormat = getTexInternalFormat(nrChannels, false);
 
-        /*
 //Generating mipmaps
         //Load texture to GPU
         GLuint tex;
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_2D, tex);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -82,34 +81,71 @@ namespace texFile
         for(int curDiv = 2; std::min(width,height) / curDiv > 0; curDiv *= 2)
         {
             int curWidth = width/curDiv;
-            int curHeight = height/curDiv;
+            int curHeight = height/curDiv;  
+            say << "nrCHannels: " << nrChannels << '\n';
+            say << "sizeof(unsigned char)*curWidth*curHeight*nrChannels): " << sizeof(unsigned char)*curWidth*curHeight*nrChannels << '\n';
 
-            mipmaps.emplace_back(malloc(sizeof(unsigned char)*curWidth*curHeight*nrChannels));
+            mipmaps.emplace_back(malloc(sizeof(unsigned char)*curWidth*curHeight*4));
 
             glViewport(0, 0, curWidth, curHeight);
             glDisable(GL_DEPTH_TEST); 
             glBindVertexArray(screenQuad.VAO);
 
             glActiveTexture(GL_TEXTURE0);
-            //glBindTexture(GL_TEXTURE_2D, );
+            glBindTexture(GL_TEXTURE_2D, tex);
 
             glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            glReadBuffer(GL_COLOR_ATTACHMENT0);
+            glReadPixels(0, 0, curWidth, curHeight, internalFormat.second, GL_UNSIGNED_BYTE, mipmaps.back());
+            glFinish();
+
+            glBindTexture(GL_TEXTURE_2D, tex);
+            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat.first, curWidth, curHeight, 0, internalFormat.second, GL_UNSIGNED_BYTE, 0);
+            glCopyTextureSubImage2D(tex, 0, 0, 0, 0, 0, curWidth, curHeight);
+            checkGlError();
+
             glFinish();
         }
 
+        checkGlError();
 
 
+        if(0) //onlyMipMap (for DEBUG)
+        {
+            int mipmapLvl = 4;
 
-        glReadBuffer(GL_COLOR_ATTACHMENT0);
-        glReadPixels(0, 0, width, height, internalFormat.second, GL_UNSIGNED_BYTE, imageData);
-        */
+            auto file = fopen(texFilePath, "wb");
+            width /= pow(2, mipmapLvl); height /= pow(2, mipmapLvl);
+            fwrite(&width, sizeof(int), 1, file);
+            fwrite(&height, sizeof(int), 1, file);
+            fwrite(&nrChannels, sizeof(int), 1, file);
+            fwrite((mipmapLvl == 0 ? imageData : mipmaps[mipmapLvl-1]), sizeof(char), width*height*nrChannels, file);
+            fclose(file);
+        }
+        else
+        {
+            auto file = fopen(texFilePath, "wb");
+            fwrite(&width, sizeof(int), 1, file);
+            fwrite(&height, sizeof(int), 1, file);
+            fwrite(&nrChannels, sizeof(int), 1, file);
+            fwrite(imageData, sizeof(char), width*height*nrChannels, file);
 
-        auto file = fopen(texFilePath, "wb");
-        fwrite(&width, sizeof(int), 1, file);
-        fwrite(&height, sizeof(int), 1, file);
-        fwrite(&nrChannels, sizeof(int), 1, file);
-        fwrite(imageData, sizeof(char), width*height*nrChannels, file);
-        fclose(file);
+            auto it = mipmaps.begin();
+            for(int curDiv = 2; std::min(width,height) / curDiv > 0; curDiv *= 2)
+            {
+                int curWidth = width/curDiv;
+                int curHeight = height/curDiv;  
+
+                fwrite(*it++, sizeof(char), curWidth*curHeight*nrChannels, file);
+            }
+            
+            fclose(file);
+        }
+
+        //free(imageData);
+
+        //for(auto t : mipmaps)free(t);
 
         say << "[TEXCREATE] - succesfully created " << texFilePath << " \n";
 
