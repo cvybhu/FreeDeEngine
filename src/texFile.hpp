@@ -5,5 +5,5 @@
 namespace texFile
 {
     int create(const char* imagePath, const char* texFilePath);
-    int load(const char* filePath, std::vector<void*>& data, int& width, int& height, int& nrChannels);
+    int load(const char* filePath, unsigned char*& data, std::vector<unsigned char*>& mipmaps, int& width, int& height, int& nrChannels);
 }

@@ -46,7 +46,7 @@ void main()
     //float mixFactor = min(max(1.1-length(texCoords - vec2(0.5))*0.2, 0), 1);
     //FragColor.xyz = mix(effectColor*50, texture(screenTex, texCoords).rgb, mixFactor);
 
-    FragColor = vec4(texture(screenTex, texCoords).rgb, 1);
+    FragColor = vec4(textureLod(screenTex, texCoords, 1).rgb, 1);
 
     //reinhard hdr tone mapping
     //FragColor = FragColor / (FragColor + 1.0);

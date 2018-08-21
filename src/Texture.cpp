@@ -21,15 +21,13 @@ void Texture::loadToRAM(const char* filePath)
 
     memcpy(&texFilePath[0] + dotPos, ".tex", 4);
 
-    std::vector<void*> dataVec;
-    if(!texFile::load(texFilePath.c_str(), dataVec, width, height, nrChannels))
-        if(!texFile::create(filePath, texFilePath.c_str()) || !texFile::load(texFilePath.c_str(), dataVec, width, height, nrChannels))
+    if(!texFile::load(texFilePath.c_str(), data, mipmaps, width, height, nrChannels))
+        if(!texFile::create(filePath, texFilePath.c_str()) 
+        || !texFile::load(texFilePath.c_str(), data, mipmaps, width, height, nrChannels))
         {
             say << "[ERROR] - Failed to load " << filePath << "!!\n";
             return;
         }
-    
-    data = (unsigned char*)dataVec[0];
 
     isOnRAM = true;
     isNormalMap = false;
@@ -125,12 +123,20 @@ void Texture::loadToGPU(bool fixGamma)
     else
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8_SNORM, width, height, 0, GL_RGB, GL_BYTE, data);
 
-    
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmaps.size());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    
+    //glGenerateMipmap(GL_TEXTURE_2D);
+    for(int m = 0, curDiv = 2; m < mipmaps.size(); m++, curDiv *= 2)
+    {
+        if(!isNormalMap)
+            glTexImage2D(GL_TEXTURE_2D, m+1, types[0], width/curDiv, height/curDiv, 0, types[1], GL_UNSIGNED_BYTE, mipmaps[m]);
+        else
+            glTexImage2D(GL_TEXTURE_2D, m+1, GL_RGB8_SNORM, width/curDiv, height/curDiv, 0, GL_RGB, GL_BYTE, mipmaps[m]);
+    }
     
     isOnGPU = true;
 }

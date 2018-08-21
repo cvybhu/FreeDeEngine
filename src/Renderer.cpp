@@ -606,7 +606,6 @@ void Renderer::draw(const glm::mat4& viewMatrix, const glm::mat4& projectionMatr
     glBlitFramebuffer(0, 0, renderRes.x, renderRes.y, 0, 0, bloomRes.x, bloomRes.y, GL_COLOR_BUFFER_BIT, GL_LINEAR); 
     
 
-
 //Skybox
     glBindFramebuffer(GL_FRAMEBUFFER, mainFbuff.index);
     glDrawBuffers(1, mainFbuff.renderTargets);
