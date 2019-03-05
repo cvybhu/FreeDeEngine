@@ -1,6 +1,6 @@
 # 3D engine
 ---------------
-C++ / openGL 3D deffered render engine currently in development.  
+C++ / openGL 3D deffered render engine.  
 
 ## Gallery:
 ![](readme/screenshot.png)  
@@ -21,7 +21,7 @@ C++ / openGL 3D deffered render engine currently in development.
 * Basic mesh loading
 * Integrated open GUI library - dear ImGui
 
-#### Coming soon:
+#### <del>Coming soon:</del> [Project abandoned]
 * Better texture filtering (right now its very blurry)
 * Smooth shading support
 * Some post-process antialiasing
@@ -36,7 +36,9 @@ C++ / openGL 3D deffered render engine currently in development.
 
 ## Building:
 Right now project runs only on linux, but all libraries are platform independent,  
-so it shouldn't be a problem in the slightest to port to other platforms.  
+so it shouldn't be a problem to port to other platforms.  
 To build run `make`  
+To run do `./main`
 
-Created thanks to [learnopengl.com](learnopengl.com)
+Created thanks to [learnopengl.com](learnopengl.com)  
+
