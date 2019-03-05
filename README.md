@@ -1,6 +1,6 @@
 # 3D engine
 ---------------
-C++ / openGL 3D deffered render engine.  
+C++ / OpenGL 3D deffered render engine.  
 
 ## Gallery:
 ![](readme/screenshot.png)  
@@ -21,8 +21,7 @@ C++ / openGL 3D deffered render engine.
 * Basic mesh loading
 * Integrated open GUI library - dear ImGui
 
-#### <del>Coming soon:</del> [Project abandoned]
-* Better texture filtering (right now its very blurry)
+#### <del>Coming soon:</del> [Project abandoned - i got bored]
 * Smooth shading support
 * Some post-process antialiasing
 * Screen Space Ambient Occlusion  
