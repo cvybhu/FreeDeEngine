@@ -39,5 +39,5 @@ so it shouldn't be a problem to port to other platforms.
 To build run `make`  
 To run do `./main`
 
-Created thanks to [learnopengl.com](learnopengl.com)  
+Created thanks to [learnopengl.com](https://learnopengl.com)  
 
